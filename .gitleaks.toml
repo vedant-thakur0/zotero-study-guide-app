@@ -1,0 +1,19 @@
+# gitleaks configuration for the Zotero Study Guide repo.
+# Run: gitleaks git . --redact     (history)
+#      gitleaks dir . --redact     (working tree, incl. untracked)
+
+# Start from gitleaks' built-in ruleset, then add repo-specific allowlisting.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Repo-specific false positives and expected local-only secret stores."
+
+# Generated, gitignored artifacts are not source. Study-guide / exam HTML output
+# trips the generic-api-key rule on quiz prose like "...use the API instead..." —
+# course content, not credentials.
+paths = [
+  '''app_config\.json''',          # local runtime config; gitignored; legitimately holds the key
+  '''.*\.html$''',                  # generated study guides / exams (gitignored output)
+  '''\.env$''',                     # local secrets file; gitignored
+]

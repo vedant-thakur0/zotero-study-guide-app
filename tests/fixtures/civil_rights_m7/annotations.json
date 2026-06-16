@@ -1,0 +1,110 @@
+{
+  "color_config": {
+    "yellow": {
+      "label": "Key concepts",
+      "description": "Definitions, core ideas, important terms"
+    },
+    "red": {
+      "label": "Quiz-worthy facts",
+      "description": "Dates, events, specific claims to test"
+    },
+    "green": {
+      "label": "People & organizations",
+      "description": "Biographical information, institutional roles"
+    },
+    "blue": {
+      "label": "Themes & arguments",
+      "description": "Analytical threads, overarching narratives"
+    },
+    "purple": {
+      "label": "Connections",
+      "description": "Cross-references, links between topics"
+    },
+    "orange": {
+      "label": "Examples",
+      "description": "Case studies, illustrative instances"
+    }
+  },
+  "annotations": [
+    {
+      "id": "ann_001",
+      "text": "After the Civil War, formerly enslaved people sought to exercise their newly won freedom through political participation, land ownership, and education.",
+      "color": "blue",
+      "page": 42,
+      "instructor_note": "Use as section intro",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_002",
+      "text": "The Reconstruction Acts of 1867 divided the South into five military districts and required states to ratify the 14th Amendment before readmission.",
+      "color": "red",
+      "page": 43,
+      "instructor_note": "Good quiz question — specific dates and requirements",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_003",
+      "text": "Forty acres and a mule — the promise of land redistribution that was never fulfilled for most freedpeople.",
+      "color": "yellow",
+      "page": 44,
+      "instructor_note": "",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_004",
+      "text": "The sharecropping system replaced slavery with a new form of economic bondage, trapping Black farmers in cycles of debt.",
+      "color": "blue",
+      "page": 45,
+      "instructor_note": "",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_005",
+      "text": "Booker T. Washington founded the Tuskegee Institute in 1881, emphasizing vocational training and economic self-sufficiency over immediate political equality.",
+      "color": "green",
+      "page": 47,
+      "instructor_note": "Key figure card",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_006",
+      "text": "W.E.B. Du Bois co-founded the NAACP in 1909 and argued for the full and immediate civil and political rights of Black Americans, directly challenging Washington's accommodationist approach.",
+      "color": "green",
+      "page": 49,
+      "instructor_note": "Contrast with Washington",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_007",
+      "text": "The Supreme Court's Plessy v. Ferguson decision (1896) enshrined 'separate but equal' as constitutional doctrine, providing legal cover for Jim Crow laws across the South.",
+      "color": "red",
+      "page": 52,
+      "instructor_note": "Critical case — must quiz on this",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_008",
+      "text": "Jim Crow laws enforced racial segregation in public life — schools, transportation, restaurants, restrooms — throughout the South from the 1870s through the 1960s.",
+      "color": "yellow",
+      "page": 53,
+      "instructor_note": "",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_009",
+      "text": "The NAACP's legal strategy culminated in Brown v. Board of Education (1954), which overturned Plessy and declared school segregation unconstitutional.",
+      "color": "purple",
+      "page": 78,
+      "instructor_note": "Connect back to Plessy",
+      "source_document": "Darling — The Quest for Equality"
+    },
+    {
+      "id": "ann_010",
+      "text": "Montgomery Bus Boycott (1955–1956): sparked by Rosa Parks's arrest, organized by the Montgomery Improvement Association under MLK, lasted 381 days.",
+      "color": "orange",
+      "page": 82,
+      "instructor_note": "Good example of nonviolent direct action",
+      "source_document": "Darling — The Quest for Equality"
+    }
+  ]
+}

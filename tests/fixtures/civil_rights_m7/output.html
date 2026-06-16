@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Guide</title>
+  <style>/* guide.css — Student-facing study guide styles
+   Inlined into output.html by build_guide.py */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Themes ──────────────────────────────────────────────────── */
+:root {
+  --bg:          #f8f7f4;
+  --surface:     #ffffff;
+  --border:      #e2e0db;
+  --text:        #1c1917;
+  --muted:       #78716c;
+  --accent:      #2563eb;
+  --accent-soft: #eff6ff;
+  --correct:     #16a34a;
+  --incorrect:   #dc2626;
+  --sidebar-w:   260px;
+
+  --kp-bg:       rgba(255, 212, 0, 0.15);
+  --fig-bg:      rgba(95, 178, 54, 0.1);
+}
+
+.theme-dark {
+  --bg:          #18181b;
+  --surface:     #27272a;
+  --border:      #3f3f46;
+  --text:        #fafafa;
+  --muted:       #a1a1aa;
+  --accent:      #60a5fa;
+  --accent-soft: #1e3a5f;
+  --kp-bg:       rgba(255, 212, 0, 0.1);
+  --fig-bg:      rgba(95, 178, 54, 0.08);
+}
+
+.theme-high-contrast {
+  --bg:          #000000;
+  --surface:     #111111;
+  --border:      #ffffff;
+  --text:        #ffffff;
+  --muted:       #cccccc;
+  --accent:      #ffff00;
+  --accent-soft: #333300;
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+html, body { height: 100%; }
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+}
+
+#app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+  z-index: 50;
+  transition: transform 0.25s ease;
+}
+
+#sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-w))); }
+
+#sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#guide-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#sidebar-toggle,
+#sidebar-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--muted);
+  padding: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+#sidebar-toggle:hover,
+#sidebar-close:hover { color: var(--text); }
+
+#sidebar-close { display: none; }
+
+/* Progress bar */
+#progress-bar-wrap {
+  padding: 10px 16px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#progress-text {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-width: 2.8ch;
+  text-align: right;
+}
+
+#progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#progress-bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  width: var(--progress, 0%);
+  transition: width 0.4s ease;
+}
+
+/* Nav list */
+#nav-list {
+  list-style: none;
+  padding: 8px 0;
+  flex: 1;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  gap: 6px;
+}
+
+.nav-link:hover { color: var(--text); background: var(--bg); }
+.nav-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); }
+.nav-link.completed { color: var(--correct); }
+
+.nav-check { margin-left: auto; font-size: 12px; }
+.nav-check.done::after { content: "✓"; color: var(--correct); }
+
+/* ── Main content ────────────────────────────────────────────── */
+#main-wrap {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.25s ease;
+  min-width: 0;
+}
+
+#main-wrap.sidebar-collapsed { margin-left: 0; }
+
+#sticky-header {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 40;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+
+#current-section-label { color: var(--muted); flex: 1; }
+#score-display { font-weight: 600; color: var(--accent); }
+
+#content { padding: 40px 32px 80px; max-width: 780px; margin-left: auto; margin-right: auto; }
+
+/* ── Guide sections ──────────────────────────────────────────── */
+.guide-section { margin-bottom: 64px; }
+
+/* ── Narrative block ─────────────────────────────────────────── */
+.section-heading {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.section-intro { font-size: 16px; color: var(--text); margin-bottom: 24px; }
+
+/* ── Key points block ────────────────────────────────────────── */
+.key-points-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+
+.key-point {
+  background: var(--kp-bg);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.kp-term {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.kp-explanation { font-size: 14px; color: var(--text); }
+
+/* ── Figures block ───────────────────────────────────────────── */
+.figure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.figure-card {
+  background: var(--fig-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.figure-name {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.figure-desc { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+/* ── Quiz block ──────────────────────────────────────────────── */
+.block-quiz { display: flex; flex-direction: column; gap: 24px; margin-bottom: 24px; }
+
+.question-block { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+
+.question-text {
+  padding: 16px 20px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.4;
+}
+
+.options { display: flex; flex-direction: column; gap: 6px; padding: 0 20px 16px; }
+
+.option-btn {
+  text-align: left;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: Georgia, serif;
+  color: var(--text);
+  line-height: 1.4;
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 44px;
+}
+
+.option-btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); }
+.option-btn:disabled { cursor: default; }
+.option-btn.correct  { background: #dcfce7; border-color: var(--correct);   color: #14532d; }
+.option-btn.wrong    { background: #fee2e2; border-color: var(--incorrect);  color: #7f1d1d; }
+
+.feedback {
+  padding: 0 20px 16px;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 0;
+  transition: all 0.2s;
+  color: var(--muted);
+}
+.feedback.correct-fb { color: var(--correct); }
+.feedback.incorrect-fb { color: var(--incorrect); }
+
+/* ── Source panel block ──────────────────────────────────────── */
+.block-source-panel {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.block-source-panel h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.block-source-panel ul { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+
+/* ── Separator block ─────────────────────────────────────────── */
+.block-separator { margin: 32px 0; }
+.separator-line  { border-top: 1px solid var(--border); }
+.separator-space { height: 32px; }
+
+/* ── Summary panel ───────────────────────────────────────────── */
+#summary-panel {
+  max-width: 780px;
+  padding: 60px 32px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#content.summary-visible { padding-bottom: 0; }
+
+#summary-panel h2 {
+  font-size: 28px;
+  margin-bottom: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#summary-text { color: var(--muted); margin-bottom: 24px; font-size: 16px; }
+
+#restart-btn {
+  padding: 10px 24px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#restart-btn:hover { opacity: 0.9; }
+
+/* ── Accessibility ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+@media (max-width: 680px) {
+  #sidebar {
+    transform: translateX(calc(-1 * var(--sidebar-w)));
+  }
+  #sidebar.mobile-open { transform: translateX(0); }
+
+  #main-wrap { margin-left: 0; }
+  #sidebar-close { display: block; }
+
+  #content { padding: 24px 16px 60px; }
+
+  .key-point { grid-template-columns: 1fr; gap: 4px; }
+  .figure-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Sidebar -->
+  <nav id="sidebar" aria-label="Sections">
+    <div id="sidebar-header">
+      <span id="guide-title">Study Guide</span>
+      <button id="sidebar-close" aria-label="Close sidebar">✕</button>
+    </div>
+    
+        <div id="progress-bar-wrap" aria-label="Progress">
+          <div id="progress-bar"></div>
+          <span id="progress-text"></span>
+        </div>
+    <ul id="nav-list"><li><a class="nav-link" href="#section-0" data-idx="0">Civil Rights Legal Victories and Direct Action<span class="nav-check" id="nav-check-0"></span></a></li><li><a class="nav-link" href="#section-1" data-idx="1">Reconstruction and the Rise of Jim Crow<span class="nav-check" id="nav-check-1"></span></a></li></ul>
+  </nav>
+
+  <!-- Main content -->
+  <div id="main-wrap">
+    <header id="sticky-header">
+      <button id="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
+      <span id="current-section-label"></span>
+      <span id="score-display"></span>
+    </header>
+
+    <main id="content">
+      
+        <section class="guide-section" id="section-0" data-idx="0">
+          
+      <div class="block block-narrative">
+        <h2 class="section-heading">Civil Rights Legal Victories and Direct Action</h2>
+        <p class="section-intro">The Civil Rights Movement employed both legal strategies and nonviolent direct action to challenge segregation. The NAACP's legal efforts culminated in Brown v. Board of Education (1954), which overturned the doctrine of separate but equal, while grassroots movements like the Montgomery Bus Boycott demonstrated the power of organized community resistance.</p>
+      </div><div class="block block-key-points"><ul class="key-points-list"><li class="key-point">
+          <span class="kp-term">Montgomery Bus Boycott</span>
+          <span class="kp-explanation">A 381-day protest (1955–1956) sparked by Rosa Parks's arrest and organized by the Montgomery Improvement Association under Martin Luther King Jr.'s leadership, demonstrating the effectiveness of nonviolent direct action in challenging segregation.</span>
+        </li></ul></div><div class="block block-quiz" data-section="0">
+      <div class="question-block" id="q_0_0">
+        <p class="question-text">What Supreme Court decision overturned the 'separate but equal' doctrine in 1954?</p>
+        <div class="options"><button class="option-btn" data-correct="false"
+                data-qid="q_0_0" data-exp-ok="Correct. Brown v. Board of Education (1954) was the landmark Supreme Court decision that overturned the separate but equal doctrine and declared segregation in public schools unconstitutional." data-exp-bad="The correct answer is Brown v. Board of Education (1954). This case overturned the separate but equal doctrine that had been established in Plessy v. Ferguson.">
+          Gideon v. Wainwright
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_0_0" data-exp-ok="Correct. Brown v. Board of Education (1954) was the landmark Supreme Court decision that overturned the separate but equal doctrine and declared segregation in public schools unconstitutional." data-exp-bad="The correct answer is Brown v. Board of Education (1954). This case overturned the separate but equal doctrine that had been established in Plessy v. Ferguson.">
+          Plessy v. Ferguson
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_0_0" data-exp-ok="Correct. Brown v. Board of Education (1954) was the landmark Supreme Court decision that overturned the separate but equal doctrine and declared segregation in public schools unconstitutional." data-exp-bad="The correct answer is Brown v. Board of Education (1954). This case overturned the separate but equal doctrine that had been established in Plessy v. Ferguson.">
+          Loving v. Virginia
+        </button><button class="option-btn" data-correct="true"
+                data-qid="q_0_0" data-exp-ok="Correct. Brown v. Board of Education (1954) was the landmark Supreme Court decision that overturned the separate but equal doctrine and declared segregation in public schools unconstitutional." data-exp-bad="The correct answer is Brown v. Board of Education (1954). This case overturned the separate but equal doctrine that had been established in Plessy v. Ferguson.">
+          Brown v. Board of Education
+        </button></div>
+        <div class="feedback" id="q_0_0-feedback" aria-live="polite"></div>
+      </div>
+      <div class="question-block" id="q_0_1">
+        <p class="question-text">How long did the Montgomery Bus Boycott last, and who led the Montgomery Improvement Association?</p>
+        <div class="options"><button class="option-btn" data-correct="false"
+                data-qid="q_0_1" data-exp-ok="Correct. The Montgomery Bus Boycott lasted 381 days from 1955 to 1956 and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership." data-exp-bad="The Montgomery Bus Boycott lasted 381 days (1955–1956) and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership, demonstrating the power of nonviolent direct action.">
+          Two years; led by James Meredith
+        </button><button class="option-btn" data-correct="true"
+                data-qid="q_0_1" data-exp-ok="Correct. The Montgomery Bus Boycott lasted 381 days from 1955 to 1956 and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership." data-exp-bad="The Montgomery Bus Boycott lasted 381 days (1955–1956) and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership, demonstrating the power of nonviolent direct action.">
+          381 days; led by Martin Luther King Jr.
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_0_1" data-exp-ok="Correct. The Montgomery Bus Boycott lasted 381 days from 1955 to 1956 and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership." data-exp-bad="The Montgomery Bus Boycott lasted 381 days (1955–1956) and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership, demonstrating the power of nonviolent direct action.">
+          381 days; led by Malcolm X
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_0_1" data-exp-ok="Correct. The Montgomery Bus Boycott lasted 381 days from 1955 to 1956 and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership." data-exp-bad="The Montgomery Bus Boycott lasted 381 days (1955–1956) and was organized by the Montgomery Improvement Association under Martin Luther King Jr.&#39;s leadership, demonstrating the power of nonviolent direct action.">
+          90 days; led by Rosa Parks
+        </button></div>
+        <div class="feedback" id="q_0_1-feedback" aria-live="polite"></div>
+      </div></div><div class="block block-source-panel"><h4>Sources</h4><ul><li>Darling — The Quest for Equality</li></ul></div>
+        </section>
+        <section class="guide-section" id="section-1" data-idx="1">
+          
+      <div class="block block-narrative">
+        <h2 class="section-heading">Reconstruction and the Rise of Jim Crow</h2>
+        <p class="section-intro">After the Civil War, formerly enslaved people sought freedom through political participation, land ownership, and education. However, the sharecropping system replaced slavery with a new form of economic bondage, trapping Black farmers in cycles of debt and limiting their ability to achieve true independence.</p>
+      </div><div class="block block-key-points"><ul class="key-points-list"><li class="key-point">
+          <span class="kp-term">Forty Acres and a Mule</span>
+          <span class="kp-explanation">A promise of land redistribution to formerly enslaved people that was largely abandoned, leaving most freedpeople without economic resources or property ownership.</span>
+        </li><li class="key-point">
+          <span class="kp-term">Jim Crow Laws</span>
+          <span class="kp-explanation">Laws that enforced racial segregation in public life—schools, transportation, restaurants, restrooms—throughout the South from the 1870s through the 1960s, creating a system of legal discrimination.</span>
+        </li></ul></div><div class="block block-figures"><div class="figure-grid"><div class="figure-card">
+          <div class="figure-name">Booker T. Washington</div>
+          <div class="figure-desc">Founded the Tuskegee Institute in 1881, emphasizing vocational training and economic self-sufficiency over immediate political equality as the path forward for Black Americans.</div>
+        </div><div class="figure-card">
+          <div class="figure-name">W.E.B. Du Bois</div>
+          <div class="figure-desc">Co-founded the NAACP in 1909 and argued for full and immediate civil and political rights of Black Americans, directly challenging Washington's accommodationist approach.</div>
+        </div></div></div><div class="block block-quiz" data-section="1">
+      <div class="question-block" id="q_1_0">
+        <p class="question-text">What did the Reconstruction Acts of 1867 require Southern states to do before readmission to the Union?</p>
+        <div class="options"><button class="option-btn" data-correct="false"
+                data-qid="q_1_0" data-exp-ok="Correct. The Reconstruction Acts of 1867 divided the South into five military districts and required ratification of the 14th Amendment as a condition for readmission." data-exp-bad="The Reconstruction Acts of 1867 specifically required Southern states to ratify the 14th Amendment, which guaranteed citizenship and equal protection, before they could rejoin the Union.">
+          Ratify the 13th Amendment
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_1_0" data-exp-ok="Correct. The Reconstruction Acts of 1867 divided the South into five military districts and required ratification of the 14th Amendment as a condition for readmission." data-exp-bad="The Reconstruction Acts of 1867 specifically required Southern states to ratify the 14th Amendment, which guaranteed citizenship and equal protection, before they could rejoin the Union.">
+          Establish public schools for freedpeople
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_1_0" data-exp-ok="Correct. The Reconstruction Acts of 1867 divided the South into five military districts and required ratification of the 14th Amendment as a condition for readmission." data-exp-bad="The Reconstruction Acts of 1867 specifically required Southern states to ratify the 14th Amendment, which guaranteed citizenship and equal protection, before they could rejoin the Union.">
+          Distribute land to formerly enslaved people
+        </button><button class="option-btn" data-correct="true"
+                data-qid="q_1_0" data-exp-ok="Correct. The Reconstruction Acts of 1867 divided the South into five military districts and required ratification of the 14th Amendment as a condition for readmission." data-exp-bad="The Reconstruction Acts of 1867 specifically required Southern states to ratify the 14th Amendment, which guaranteed citizenship and equal protection, before they could rejoin the Union.">
+          Ratify the 14th Amendment
+        </button></div>
+        <div class="feedback" id="q_1_0-feedback" aria-live="polite"></div>
+      </div>
+      <div class="question-block" id="q_1_1">
+        <p class="question-text">What constitutional doctrine did Plessy v. Ferguson (1896) establish regarding racial segregation?</p>
+        <div class="options"><button class="option-btn" data-correct="false"
+                data-qid="q_1_1" data-exp-ok="Correct. Plessy v. Ferguson established the &#39;separate but equal&#39; doctrine, which provided legal constitutional cover for Jim Crow segregation laws throughout the South." data-exp-bad="The Supreme Court&#39;s Plessy v. Ferguson decision established the &#39;separate but equal&#39; doctrine, legitimizing racial segregation in public facilities until it was overturned by Brown v. Board of Education in 1954.">
+          States have no power to segregate
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_1_1" data-exp-ok="Correct. Plessy v. Ferguson established the &#39;separate but equal&#39; doctrine, which provided legal constitutional cover for Jim Crow segregation laws throughout the South." data-exp-bad="The Supreme Court&#39;s Plessy v. Ferguson decision established the &#39;separate but equal&#39; doctrine, legitimizing racial segregation in public facilities until it was overturned by Brown v. Board of Education in 1954.">
+          Separate and unequal
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_1_1" data-exp-ok="Correct. Plessy v. Ferguson established the &#39;separate but equal&#39; doctrine, which provided legal constitutional cover for Jim Crow segregation laws throughout the South." data-exp-bad="The Supreme Court&#39;s Plessy v. Ferguson decision established the &#39;separate but equal&#39; doctrine, legitimizing racial segregation in public facilities until it was overturned by Brown v. Board of Education in 1954.">
+          Segregation violates the 14th Amendment
+        </button><button class="option-btn" data-correct="true"
+                data-qid="q_1_1" data-exp-ok="Correct. Plessy v. Ferguson established the &#39;separate but equal&#39; doctrine, which provided legal constitutional cover for Jim Crow segregation laws throughout the South." data-exp-bad="The Supreme Court&#39;s Plessy v. Ferguson decision established the &#39;separate but equal&#39; doctrine, legitimizing racial segregation in public facilities until it was overturned by Brown v. Board of Education in 1954.">
+          Separate but equal
+        </button></div>
+        <div class="feedback" id="q_1_1-feedback" aria-live="polite"></div>
+      </div>
+      <div class="question-block" id="q_1_2">
+        <p class="question-text">Select A</p>
+        <div class="options"><button class="option-btn" data-correct="false"
+                data-qid="q_1_2" data-exp-ok="" data-exp-bad="">
+          C
+        </button><button class="option-btn" data-correct="false"
+                data-qid="q_1_2" data-exp-ok="" data-exp-bad="">
+          B
+        </button><button class="option-btn" data-correct="true"
+                data-qid="q_1_2" data-exp-ok="" data-exp-bad="">
+          A
+        </button></div>
+        <div class="feedback" id="q_1_2-feedback" aria-live="polite"></div>
+      </div></div><div class="block block-source-panel"><h4>Sources</h4><ul><li>Darling — The Quest for Equality</li></ul></div>
+        </section>
+    </main>
+
+    <div id="summary-panel" hidden>
+      <h2>You're done!</h2>
+      <p id="summary-text"></p>
+      <button id="restart-btn">Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>/* guide.js — Student-facing study guide interactivity
+   Inlined into output.html by build_guide.py */
+
+"use strict";
+
+(function () {
+
+  // ── State ────────────────────────────────────────────────────────────────
+  const sections   = document.querySelectorAll(".guide-section");
+  const navLinks   = document.querySelectorAll(".nav-link");
+  const navChecks  = document.querySelectorAll(".nav-check");
+  const progress   = document.getElementById("progress-bar");
+  const scoreEl    = document.getElementById("score-display");
+  const curLabel   = document.getElementById("current-section-label");
+
+  let totalQ  = document.querySelectorAll(".question-block").length;
+  let correctQ = 0;
+  const quizDone = new Set();  // section indices that have been fully answered
+
+  // ── Sidebar toggle ───────────────────────────────────────────────────────
+  const sidebar     = document.getElementById("sidebar");
+  const mainWrap    = document.getElementById("main-wrap");
+  const sidebarBtn  = document.getElementById("sidebar-toggle");
+
+  function toggleSidebar() {
+    sidebar.classList.toggle("collapsed");
+    mainWrap.classList.toggle("sidebar-collapsed");
+  }
+
+  sidebarBtn?.addEventListener("click", toggleSidebar);
+  document.getElementById("sidebar-close")?.addEventListener("click", toggleSidebar);
+
+  // ── Scroll spy — highlight active nav link ───────────────────────────────
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const idx = entry.target.dataset.idx;
+          navLinks.forEach((l) => l.classList.remove("active"));
+          const activeLink = document.querySelector(`.nav-link[data-idx="${idx}"]`);
+          activeLink?.classList.add("active");
+          curLabel.textContent = activeLink?.textContent.replace("✓", "").trim() ?? "";
+          updateProgress();
+        }
+      });
+    },
+    { rootMargin: "-30% 0px -60% 0px" }
+  );
+
+  sections.forEach((s) => observer.observe(s));
+
+  // ── Progress bar ─────────────────────────────────────────────────────────
+  const progressText = document.getElementById("progress-text");
+
+  function updateProgress() {
+    const done  = document.querySelectorAll(".nav-check.done").length;
+    const total = navChecks.length;
+    if (!total) return;
+    const pct = Math.round((done / total) * 100);
+    progress?.style.setProperty("--progress", pct + "%");
+    if (progressText) progressText.textContent = `${pct}%`;
+  }
+
+  function markSectionDone(idx) {
+    const check = document.getElementById(`nav-check-${idx}`);
+    if (check && !check.classList.contains("done")) {
+      check.classList.add("done");
+      const link = document.querySelector(`.nav-link[data-idx="${idx}"]`);
+      link?.classList.add("completed");
+    }
+    updateProgress();
+    checkAllDone();
+  }
+
+  // ── Quiz logic ───────────────────────────────────────────────────────────
+  const allQuizBlocks = document.querySelectorAll(".block-quiz");
+
+  allQuizBlocks.forEach((block) => {
+    const sectionIdx = parseInt(block.dataset.section, 10);
+    const questions  = block.querySelectorAll(".question-block");
+
+    block.querySelectorAll(".option-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const qid      = this.dataset.qid;
+        const qBlock   = document.getElementById(qid);
+        const feedback = document.getElementById(`${qid}-feedback`);
+        const buttons  = qBlock.querySelectorAll(".option-btn");
+
+        // Disable all options for this question
+        buttons.forEach((b) => (b.disabled = true));
+
+        const isCorrect = this.dataset.correct === "true";
+
+        if (isCorrect) {
+          this.classList.add("correct");
+          feedback.textContent  = this.dataset.expOk || "Correct!";
+          feedback.className    = "feedback correct-fb";
+          correctQ++;
+        } else {
+          this.classList.add("wrong");
+          feedback.textContent  = this.dataset.expBad || "Not quite.";
+          feedback.className    = "feedback incorrect-fb";
+          // Reveal correct answer
+          buttons.forEach((b) => {
+            if (b.dataset.correct === "true") b.classList.add("correct");
+          });
+        }
+
+        updateScore();
+
+        // Check if all questions in this section are answered
+        const answered = [...questions].every((q) =>
+          q.querySelector(".option-btn:disabled")
+        );
+        if (answered && !quizDone.has(sectionIdx)) {
+          quizDone.add(sectionIdx);
+          markSectionDone(sectionIdx);
+        }
+      });
+    });
+  });
+
+  // Sections with no quiz are auto-completed when scrolled into view
+  sections.forEach((sec) => {
+    const idx      = parseInt(sec.dataset.idx, 10);
+    const hasQuiz  = sec.querySelector(".block-quiz");
+    if (!hasQuiz) {
+      // Mark done on first observation
+      const oneOff = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            markSectionDone(idx);
+            oneOff.unobserve(sec);
+          }
+        });
+      }, { rootMargin: "-10% 0px -50% 0px" });
+      oneOff.observe(sec);
+    }
+  });
+
+  // ── Score display ─────────────────────────────────────────────────────────
+  function updateScore() {
+    if (scoreEl && totalQ > 0) {
+      scoreEl.textContent = `${correctQ} / ${totalQ}`;
+    }
+  }
+
+  // ── Summary panel ─────────────────────────────────────────────────────────
+  function checkAllDone() {
+    if (document.querySelectorAll(".nav-check.done").length === navChecks.length) {
+      showSummary();
+    }
+  }
+
+  function showSummary() {
+    const panel   = document.getElementById("summary-panel");
+    const text    = document.getElementById("summary-text");
+    const content = document.getElementById("content");
+    if (!panel) return;
+    panel.hidden  = false;
+    content.classList.add("summary-visible");
+    if (text) {
+      text.textContent = totalQ > 0
+        ? `You answered ${correctQ} out of ${totalQ} quiz questions correctly.`
+        : "You've completed all sections.";
+    }
+  }
+
+  document.getElementById("restart-btn")?.addEventListener("click", () => {
+    location.reload();
+  });
+
+  // ── Smooth scroll for nav links ──────────────────────────────────────────
+  navLinks.forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute("href"));
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  updateProgress();
+  updateScore();
+
+})();
+</script>
+</body>
+</html>

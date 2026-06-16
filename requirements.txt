@@ -1,0 +1,12 @@
+flask>=3.0
+pyzotero>=1.5
+requests>=2.31
+pyyaml>=6.0
+json-repair>=0.28
+anthropic>=0.25
+python-docx>=1.1
+beautifulsoup4>=4.12
+filelock>=3.13
+
+# Dev / test
+pytest-playwright>=0.4

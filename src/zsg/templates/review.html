@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Guide Builder</title>
+  <link rel="stylesheet" href="/static/review.css">
+</head>
+<body>
+
+<header>
+  <h1>Study Guide Builder</h1>
+  <nav class="tabs">
+    <button class="tab-btn" data-tab="tab-setup">Setup</button>
+    <button class="tab-btn" data-tab="tab-pipeline">Pipeline</button>
+    <button class="tab-btn active" data-tab="tab-narrative">Narrative Review</button>
+    <button class="tab-btn" data-tab="tab-quiz">Quiz Review</button>
+    <button class="tab-btn" data-tab="tab-export">Export</button>
+  </nav>
+  <div class="header-spacer"></div>
+  <span id="progress-label"></span>
+</header>
+
+<!-- ── Setup tab ──────────────────────────────────────────────── -->
+<div id="tab-setup" class="tab-panel">
+  <div class="empty-state">
+    <span class="spinner"></span> Loading…
+  </div>
+</div>
+
+<!-- ── Pipeline tab ───────────────────────────────────────────── -->
+<div id="tab-pipeline" class="tab-panel">
+  <div class="empty-state">
+    <span class="spinner"></span> Loading…
+  </div>
+</div>
+
+<!-- ── Narrative Review tab ──────────────────────────────────── -->
+<div id="tab-narrative" class="tab-panel active">
+  <div id="narrative-sections">
+    <div class="empty-state">
+      <span class="spinner"></span> Loading…
+    </div>
+  </div>
+</div>
+
+<!-- ── Quiz Review tab ───────────────────────────────────────── -->
+<div id="tab-quiz" class="tab-panel">
+  <div id="quiz-sections">
+    <div class="empty-state">
+      <span class="spinner"></span> Loading…
+    </div>
+  </div>
+</div>
+
+<!-- ── Export tab ────────────────────────────────────────────── -->
+<div id="tab-export" class="tab-panel">
+  <div class="export-layout">
+
+    <!-- Left: settings form -->
+    <div class="export-panel">
+      <h2>Guide Settings</h2>
+
+      <div class="form-row">
+        <label class="form-label" for="exp-title">Title</label>
+        <input class="form-input" id="exp-title" type="text" value="Study Guide" placeholder="Guide title">
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Theme</label>
+        <div class="theme-swatches">
+          <div class="theme-swatch theme-light selected" data-theme="light" title="Light">☀</div>
+          <div class="theme-swatch theme-dark"  data-theme="dark"  title="Dark">🌙</div>
+          <div class="theme-swatch theme-high-contrast" data-theme="high-contrast" title="High Contrast">◑</div>
+        </div>
+        <input type="hidden" id="exp-theme" value="light">
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" for="exp-nav">Navigation style</label>
+        <select class="form-select" id="exp-nav">
+          <option value="linear">Linear (forward-only)</option>
+          <option value="sidebar" selected>Sidebar (free navigation)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Options</label>
+        <div class="form-check-row">
+          <input type="checkbox" id="exp-progress" checked>
+          <label for="exp-progress">Show progress bar</label>
+        </div>
+      </div>
+
+      <button class="build-btn" id="build-btn">Build Guide</button>
+      <button class="open-btn" id="open-btn" disabled>Open in Browser</button>
+
+      <div class="build-result" id="build-result">
+        <strong>Built successfully</strong>
+        <div class="result-path" id="result-path"></div>
+        <div id="result-meta"></div>
+      </div>
+    </div>
+
+    <!-- Right: live preview of what will be included -->
+    <div class="export-panel">
+      <h2>Preview <button id="refresh-preview-btn" class="refresh-btn">↻ Refresh</button></h2>
+      <div id="export-preview-content">
+        <div class="preview-empty">Click "Build Guide" or switch to this tab to see a preview.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<link rel="stylesheet" href="/static/app.css">
+<!-- Client-side storage layer + fetch interceptor. These load first so they
+     can install /api/* overrides before review.js/app.js make any calls.
+     Active only when ?mode=client is set or localStorage.zsg_client_mode === "1". -->
+<script src="/static/storage.js"></script>
+<script>
+  // Open the IndexedDB connection before client-mode.js installs its handlers
+  // so its first /api/* intercept has a ready store. The intercept handlers
+  // themselves also call openDb() defensively, so this is just a warm-up.
+  if (window.ZSGStore) window.ZSGStore.init();
+</script>
+<script src="/static/client-mode.js"></script>
+<script src="/static/review.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

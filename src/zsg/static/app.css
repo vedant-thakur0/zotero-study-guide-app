@@ -1,0 +1,296 @@
+/* app.css — Styles for Setup and Pipeline tabs */
+
+/* ── Setup Tab ──────────────────────────────────────────────────────────── */
+
+.setup-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.setup-help {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.setup-container h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+.setup-container h3:first-of-type {
+  margin-top: 0;
+}
+
+.form-row {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.form-input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-hint {
+  font-size: 0.85rem;
+  color: #999;
+  margin-top: 0.3rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #4b5563;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+#test-result {
+  padding: 0.75rem;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+}
+
+/* Color customization rows */
+.color-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.color-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  flex-shrink: 0;
+}
+
+.color-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.color-label,
+.color-desc {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.color-label:focus,
+.color-desc:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* ── Pipeline Tab ──────────────────────────────────────────────────────── */
+
+.pipeline-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.pipeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pipeline-header h2 {
+  margin: 0;
+}
+
+.project-selector {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.project-selector label {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.project-selector select {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.pipeline-empty {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #999;
+  font-size: 1rem;
+}
+
+.pipeline-stages {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.stage {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 1.5rem;
+  background-color: #fafafa;
+  transition: all 0.2s;
+}
+
+.stage.done {
+  background-color: #f0fdf4;
+  border-color: #86efac;
+}
+
+.stage h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+}
+
+.stage p {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.stage-content {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stage-status {
+  color: #16a34a;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.log {
+  border: 1px solid #ddd;
+  background-color: #1e1e1e;
+  color: #00ff00;
+  padding: 1rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: "Courier New", monospace;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 1rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+input[type="file"] {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .setup-container,
+  .pipeline-container {
+    padding: 1rem;
+  }
+
+  .pipeline-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .project-selector {
+    flex-direction: column;
+  }
+
+  .project-selector select {
+    width: 100%;
+  }
+
+  .color-row {
+    flex-direction: column;
+  }
+
+  .stage-content {
+    flex-direction: column;
+  }
+
+  .stage-content button,
+  .stage-content input {
+    width: 100%;
+  }
+}

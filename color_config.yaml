@@ -1,0 +1,23 @@
+# color_config.yaml — instructor editable
+# Assign meaning to each Zotero highlight color.
+# These labels are used by preprocess.py to group and tag annotations.
+
+colors:
+  yellow:
+    label: "Key concepts"
+    description: "Definitions, core ideas, important terms"
+  red:
+    label: "Quiz-worthy facts"
+    description: "Dates, events, specific claims to test"
+  green:
+    label: "People & organizations"
+    description: "Biographical information, institutional roles"
+  blue:
+    label: "Themes & arguments"
+    description: "Analytical threads, overarching narratives"
+  purple:
+    label: "Connections"
+    description: "Cross-references, links between topics"
+  orange:
+    label: "Examples"
+    description: "Case studies, illustrative instances"

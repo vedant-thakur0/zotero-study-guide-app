@@ -1,0 +1,50 @@
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.env
+venv/
+.venv/
+
+# --- Tooling caches ---
+.pytest_cache/
+
+# --- PyInstaller / desktop-app build output (no longer built; never commit) ---
+build/
+dist/
+*.spec
+
+# --- App config (contains sensitive API keys) ---
+app_config.json
+# filelock lock files created by the running server (e.g. app_config.json.lock)
+*.lock
+
+# --- Project working data (auto-generated, not source) ---
+# Tracked inputs (source_export.html, sample_annotations.md) stay in git;
+# everything the pipeline generates is ignored.
+projects/*/state.json
+projects/*/output.html
+projects/*/annotations.json
+projects/*/sections.json
+# filelock locks created by the running server
+projects/*/*.lock
+# Real Zotero exports dropped into a project (keep the named source_export.html input)
+projects/*/*.html
+!projects/*/source_export.html
+
+# --- Exam sub-tool generated HTML (source is build_exam.py / parse_exam.py) ---
+interactive_practice_exam/exam*.html
+interactive_practice_exam/*.docx
+interactive_practice_exam/target_exams/*.html
+interactive_practice_exam/exams/*.html
+
+# --- Golden test data (manual-comparison snapshots; large, regenerable) ---
+tests/fixtures/golden/
+
+# --- Sample data: keep the example export, skip the large source PDF ---
+sample-data/*.pdf
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db

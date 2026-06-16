@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zsg"
+version = "0.1.0"
+description = "Zotero → interactive HTML study-guide pipeline"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=3.0",
+    "pyzotero>=1.5",
+    "requests>=2.31",
+    "pyyaml>=6.0",
+    "json-repair>=0.28",
+    "anthropic>=0.25",
+    "python-docx>=1.1",
+    "beautifulsoup4>=4.12",
+    "filelock>=3.13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-playwright>=0.4",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Package the code-owned web assets (templates/static/prompts) alongside the code.
+[tool.setuptools.package-data]
+zsg = ["templates/*", "static/*", "prompts/*"]
+
+[tool.pytest.ini_options]
+# Make `import zsg...` work in tests without an editable install.
+pythonpath = ["src"]
+testpaths = ["tests"]
+# e2e needs a live browser (Playwright); opt in explicitly.
+addopts = "--ignore=tests/e2e"

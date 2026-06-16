@@ -1,0 +1,30 @@
+# llm_config.yaml — LLM endpoint configuration
+# Supported providers: purdue_genai, anthropic, ollama, vllm, lmstudio
+
+# ── Purdue GenAI Studio (default) ─────────────────────────────
+provider: purdue_genai
+base_url: https://genai.rcac.purdue.edu/api/chat/completions
+model: llama3.1:latest
+temperature: 0.1
+max_tokens: 8192
+# api_key: YOUR_PURDUE_GENAI_API_KEY   # or set PURDUE_GENAI_API_KEY in the environment
+
+# ── Anthropic (Claude) ────────────────────────────────────────
+# provider: anthropic
+# model: claude-haiku-4-5-20251001
+# temperature: 0.1
+# max_tokens: 8192
+# api_key: YOUR_ANTHROPIC_API_KEY      # or set ANTHROPIC_API_KEY in the environment
+
+# ── Local model alternatives ──────────────────────────────────
+# provider: ollama
+# base_url: http://localhost:11434
+# model: llama3.1:70b
+# temperature: 0.1
+# max_tokens: 2048
+# top_p: 0.85
+# repeat_penalty: 1.05
+
+# provider: vllm
+# base_url: http://localhost:8000
+# model: meta-llama/Meta-Llama-3.1-70B-Instruct
