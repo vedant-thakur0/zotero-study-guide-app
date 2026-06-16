@@ -2,6 +2,8 @@
 
 Turn Zotero PDF annotations into a self-contained, interactive HTML study guide — with a human-in-the-loop verification step before anything reaches students.
 
+The content-generation step is powered by **[Purdue GenAI Studio](https://genai.rcac.purdue.edu)** by default (other LLM providers are supported behind a single seam).
+
 ---
 
 ## How it works
@@ -27,6 +29,35 @@ Zotero annotations (HTML export)
         ▼
   output.html        Single portable file — no dependencies
 ```
+
+---
+
+## Architecture & deployment
+
+**LLM integration is a single seam.** All model calls go through `call_llm(prompt, cfg)` in
+[`src/zsg/generate.py`](src/zsg/generate.py), which switches on a provider. The default is
+Purdue GenAI Studio (a Bearer-token, OpenAI-compatible endpoint); adding a provider — or
+pointing an OpenAI-compatible one at a different `base_url` — is a small, localized change.
+API keys are read from config **or** environment variables and are never logged.
+
+**Two runtime modes, differing in where state lives:**
+
+| | Server-state mode (default, `/`) | Client mode (`/?mode=client`) |
+|---|---|---|
+| State | server's local disk (`projects/<slug>/*.json`) | browser IndexedDB |
+| Server role | stateful | **stateless transformer** |
+| Multi-user | single-user | safe (nothing shared server-side) |
+
+The stateless path is the deployment-friendly one: the `/api/v2/*` routes in
+[`src/zsg/verify.py`](src/zsg/verify.py) take data in the request body and return transformed
+data, writing nothing to disk (`parse` → `sections` → `llm` → `build`). It's end-to-end
+tested (Playwright) but currently opt-in via `?mode=client`.
+
+**Status / not yet productionized:** the app runs on Flask's development server
+([`src/zsg/app.py`](src/zsg/app.py)) and the default mode is single-user. A multi-user hosted
+deployment would mean defaulting to the stateless client-mode path and running behind a
+production WSGI server (e.g. gunicorn). The architecture supports this; it isn't switched on
+yet.
 
 ---
 
