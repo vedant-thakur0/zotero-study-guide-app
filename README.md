@@ -217,7 +217,7 @@ zotero-study-guide/
 │
 ├── interactive_practice_exam/ Separate sub-tool: DOCX exams → interactive HTML
 ├── sample-data/              Example Zotero export
-├── docs/                     GUIDE, REPOSITORY, GETTING_STARTED, PIPELINE_EVALUATION
+├── docs/                     GUIDE, REPOSITORY, GETTING_STARTED
 └── tests/                    pytest suite (+ tests/e2e Playwright, tests/fixtures)
 ```
 
@@ -258,82 +258,6 @@ To control section boundaries, add `#TagName` at the start of an annotation's no
 All annotations after this one (up to the next tag) belong to the `reconstruction` section. Untagged annotations inherit the most recent tag.
 
 If no tags are found, the preprocessor falls back to page-proximity grouping (configurable with `--page-window`).
-
----
-
-## Known issues & improvements
-
-Tracked here so they're visible up front. The deeper write-up (with file/line
-references) lives in [docs/PIPELINE_EVALUATION.md](docs/PIPELINE_EVALUATION.md).
-Several issues from earlier in that doc are **already resolved** — `state.json`
-file-locking, the BeautifulSoup HTML parser, the `pipeline_runner` LRU cap +
-cancel, and LLM truncation detection all landed. What remains:
-
-### High impact
-- ~~**Section grouping is crude (`preprocess.py`).**~~ **Resolved (2026-06-16).**
-  The four grouping failure modes from the evaluation are fixed, each pinned by a
-  now-passing test in `tests/test_preprocess.py`:
-  - **Dense-export collapse / over-split.** Proximity grouping no longer relies on
-    consecutive page gaps alone. After gap-splitting, runs are further split on a
-    sustained color transition (`_split_by_color` — instructors mark topic shifts
-    with color) and on total page span (`_split_by_span`). The live repro — a
-    60-annotation export over pages 1–11 — now yields multiple sections, not one.
-  - **Silent tiny-section merge.** `MIN_SECTION_SIZE` merges still happen but are
-    now **visible**: the absorbing section carries an optional
-    `_metadata {merge_reason, merged_runs_count}` (ignorable downstream).
-  - **Non-numeric pages.** `"vii"`, `"Intro"` get distinct negative synthetic sort
-    keys instead of all collapsing to page `0`, so they sort to the front and don't
-    fuse into one pseudo-section (`_page_num` takes a `nonnumeric_map`).
-  - **Unrequested `general` bucket.** Annotations before the first `#tag` now form a
-    clearly-named `untagged_preamble` section (first in the list); the silent
-    `general` catch-all is gone. `preprocess` also prints a stdout summary of which
-    boundary calls were heuristic.
-  - _Known residual:_ distinct non-numeric labels can still group together when
-    within `page_window` on the synthetic scale — surfaced in the summary, not
-    silently.
-  - **Manual fix in the UI:** the Narrative Review tab now has a per-section
-    **delete** (🗑 / `DELETE /api/section/<id>/delete`) so a bad group can be removed
-    without re-running `preprocess`; the delete updates `sections.json` (the source
-    of truth) so it doesn't resurrect on reload.
-- ~~**Quiz generation is gated on red annotations only (`generate.py`).**~~
-  **Resolved (2026-06-16).** The red gate no longer fails silently. The Quiz
-  Review tab now shows every approved section with a guiding prompt — the count of
-  quiz-worthy (red) annotations and two paths forward: *Generate with LLM* (which,
-  for a zero-red section, derives questions from the **approved narrative**
-  artifacts via a separate `quiz_from_narrative.txt` prompt) or *re-annotate &
-  re-upload*. Generated questions land un-approved in the normal `quiz_approved`
-  gate. CLI parity via `generate quiz --from-narrative`. Wired in both server and
-  client (`?mode=client`) modes.
-
-### Correctness / robustness
-- ~~**Default-provider mismatch.**~~ **Resolved (2026-06-16).** Every entry point now
-  defaults to the same provider — **Purdue GenAI Studio** (`purdue_genai`,
-  `llama3.1:latest`): `generate.call_llm`, the `zsg.app` config seeding, the stateless
-  `/api/v2/llm` route, the client-mode default config, and `llm_config.yaml` all agree.
-  (The review app's generation routes already resolved config from `app_config.json` — the
-  Setup tab's source of truth — so a standalone `python -m zsg.verify` no longer falls
-  back to a different keyless provider.)
-- **No token/cost accounting**, and the Anthropic prompt-cache prefix sees little
-  reuse because `{annotations}` substitution lands in the user message rather
-  than the cached system prefix.
-- **`state.json` has no schema-migration story** — adding a field means manually
-  patching every existing project file.
-
-### Polish / DX
-- **Port 5000 collides with macOS AirPlay Receiver** (Control Center binds
-  `*:5000`), which returns `403` and looks like an app failure. Run on another
-  port (`python -m zsg.verify --port 5050`) or disable AirPlay Receiver in
-  System Settings → General → AirDrop & Handoff.
-- **`app.py:setup_flask` mutates module-level globals on `verify`** — runtime
-  project switching won't rebind reliably unless `verify` re-reads per request.
-- **`print(...)` is used throughout instead of `logging`** — noisy and hard to
-  capture cleanly under the subprocess runner.
-
-### Architecture
-- **Client mode is opt-in, not default.** The browser-first path (IndexedDB +
-  stateless `/api/v2/*`) is wired and E2E-tested but only active via
-  `?mode=client`; promoting it to the default (and deciding the fate of the
-  legacy server-state `/api/*` routes) is the open product call.
 
 ---
 

@@ -54,7 +54,7 @@ zotero-study-guide/
 │   ├── build_exam.py / parse_exam.py
 │   └── exam_toolkit/          exam_config.py, question_types.py, renderers.py
 │
-├── docs/                      GUIDE, REPOSITORY, GETTING_STARTED, PIPELINE_EVALUATION
+├── docs/                      GUIDE, REPOSITORY, GETTING_STARTED
 └── tests/                     pytest suite (+ tests/e2e Playwright, tests/js Node, tests/fixtures)
 ```
 
