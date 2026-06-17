@@ -480,20 +480,41 @@ async function uploadExport() {
   }
 }
 
+// Show an indeterminate progress bar under a pipeline stage's button while it
+// runs. Returns the element; it is removed on error, or auto-cleared when the
+// stage completes and renderPipelineTab() rebuilds the DOM.
+function showStageProgress(stageNum) {
+  const btnId = stageNum === "1" ? "upload-btn" : `run-stage-${stageNum}-btn`;
+  const btn = document.getElementById(btnId);
+  if (!btn) return null;
+  // Avoid duplicates if clicked twice.
+  btn.parentElement?.querySelector(".gen-progress")?.remove();
+  const bar = document.createElement("div");
+  bar.className = "gen-progress";
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-label", "Running pipeline stage");
+  btn.insertAdjacentElement("afterend", bar);
+  return bar;
+}
+
 async function runStage(stage, options = {}) {
   if (!appConfig.active_project) {
     toast("No project selected.");
     return;
   }
 
+  const stageNum = stage.includes("preprocess") ? "2" : stage.includes("generate") ? "3" : "1";
+  const progress = showStageProgress(stageNum);
+
   const res = await runPipelineStage(stage, options);
   if (!res.run_id) {
+    progress && progress.remove();
     toast(`Error: ${res.error}`);
     return;
   }
 
   currentRunId = res.run_id;
-  const logId = `log-stage-${stage.includes("preprocess") ? "2" : stage.includes("generate") ? "3" : "1"}`;
+  const logId = `log-stage-${stageNum}`;
   const logEl = document.getElementById(logId);
   if (logEl) {
     logEl.style.display = "block";
