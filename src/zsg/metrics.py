@@ -38,6 +38,26 @@ Best-effort
 -----------
 Any exception raised during logging is caught, printed to stderr, and
 swallowed so that a metrics failure never breaks an LLM generation call.
+
+S3 backend (opt-in)
+-------------------
+Set ZSG_METRICS_PATH to an ``s3://bucket/prefix`` URI to enable the S3
+backend.  Any other value (or no value) uses the local file backend (the
+default).  The backend is selected at call time by inspecting the value of
+ZSG_METRICS_PATH, so it can change between calls in the same process (e.g.
+during tests).
+
+Object layout: one JSON object per record, keyed as
+    <prefix>/YYYY/MM/DD/<ts_hex>-<uuid4>.json
+where <ts_hex> is the record's ISO-8601 timestamp with colons/dots replaced so
+it is a valid S3 key component.  One-object-per-record avoids S3's lack of
+append, makes PutObject a single cheap network call per record (no read-modify-
+write, no lock contention across tasks), and makes load_records a ListObjects +
+GetObject fan-out.  Reads are rare (offline operator runs); writes are hot-path
+— so trading read cost for write simplicity is correct here.
+
+boto3 is imported LAZILY inside the S3 code path only.  Importing zsg.metrics
+with no boto3 installed must keep working for file mode and the test suite.
 """
 
 import hashlib
@@ -46,6 +66,7 @@ import os
 import statistics
 import sys
 import threading
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -55,11 +76,39 @@ from zsg import PROJECT_ROOT
 _log_lock = threading.Lock()
 
 
+def _metrics_uri() -> str:
+    """Return the raw ZSG_METRICS_PATH value, or the default file path string."""
+    override = os.environ.get("ZSG_METRICS_PATH")
+    return override if override else str(PROJECT_ROOT / "metrics.jsonl")
+
+
+def _is_s3_uri(uri: str) -> bool:
+    """Return True if *uri* looks like an s3:// URI."""
+    return uri.startswith("s3://")
+
+
+def _parse_s3_uri(uri: str):
+    """Parse ``s3://bucket/prefix`` into ``(bucket, prefix)``.
+
+    The prefix may be empty ("") if the URI is exactly ``s3://bucket`` or
+    ``s3://bucket/``.  The trailing slash on the prefix is stripped; callers
+    should append their own ``/<key>`` separator.
+    """
+    # Strip the scheme
+    without_scheme = uri[len("s3://"):]
+    slash = without_scheme.find("/")
+    if slash == -1:
+        return without_scheme, ""
+    bucket = without_scheme[:slash]
+    prefix = without_scheme[slash + 1:].rstrip("/")
+    return bucket, prefix
+
+
 def _log_path() -> Path:
-    """Resolve the metrics log path.
+    """Resolve the metrics log path (file-mode only).
 
     Checks ZSG_METRICS_PATH first (for test redirection), then falls back to
-    PROJECT_ROOT/metrics.jsonl.
+    PROJECT_ROOT/metrics.jsonl.  Only call this when _is_s3_uri() is False.
     """
     override = os.environ.get("ZSG_METRICS_PATH")
     return Path(override) if override else PROJECT_ROOT / "metrics.jsonl"
@@ -87,6 +136,95 @@ def key_fingerprint(api_key: Optional[str]) -> str:
     return hashlib.sha256(raw).hexdigest()[:16]
 
 
+def _s3_object_key(prefix: str, record: dict) -> str:
+    """Build a date-partitioned S3 object key for *record*.
+
+    Layout: ``<prefix>/YYYY/MM/DD/<ts_safe>-<uuid4>.json``
+
+    The timestamp component has colons and dots replaced with dashes so the key
+    is URL-safe and easy to sort lexicographically.  The uuid4 suffix avoids
+    collisions when two calls land in the same millisecond (e.g. under
+    ThreadPoolExecutor).  One object per record — no append, no lock contention
+    across tasks.
+    """
+    ts: str = record["ts"]  # e.g. "2026-06-17T12:34:56.789012+00:00"
+    # Parse just the date portion for the partition key
+    try:
+        dt = datetime.fromisoformat(ts)
+    except ValueError:
+        dt = datetime.now(timezone.utc)
+    date_part = dt.strftime("%Y/%m/%d")
+    ts_safe = ts.replace(":", "-").replace(".", "-").replace("+", "-")
+    key_name = f"{ts_safe}-{uuid.uuid4().hex}.json"
+    if prefix:
+        return f"{prefix}/{date_part}/{key_name}"
+    return f"{date_part}/{key_name}"
+
+
+def _s3_client():
+    """Return a boto3 S3 client.  boto3 is imported lazily here.
+
+    Raises ImportError if boto3 is not installed (caller must handle).
+    """
+    import boto3  # noqa: PLC0415 — intentional lazy import
+    return boto3.client("s3")
+
+
+def _append_record_s3(record: dict, bucket: str, prefix: str) -> None:
+    """Write *record* as a single JSON object to S3 (best-effort).
+
+    Any error — including a missing boto3 installation, missing credentials,
+    throttling, or network failure — is caught, printed to stderr, and
+    swallowed so the caller always continues normally.
+
+    S3 writes are independent (unique keys), so _log_lock is not needed here
+    for correctness, but thread safety is preserved because each call touches
+    a distinct key.
+    """
+    try:
+        s3 = _s3_client()
+        key = _s3_object_key(prefix, record)
+        body = json.dumps(record, ensure_ascii=False).encode("utf-8")
+        s3.put_object(Bucket=bucket, Key=key, Body=body,
+                      ContentType="application/json")
+    except Exception as exc:
+        print(f"[zsg.metrics] WARNING: failed to write metrics record to S3: {exc}",
+              file=sys.stderr)
+
+
+def _load_records_s3(bucket: str, prefix: str) -> list:
+    """Read all records from S3 under *bucket*/*prefix* (best-effort).
+
+    Lists objects under the prefix, fetches each one, and parses the JSON body.
+    Malformed objects are silently skipped.  Returns an empty list on any error.
+
+    This is intentionally synchronous and sequential — reads are offline/operator
+    runs, not on the hot path.
+    """
+    try:
+        s3 = _s3_client()
+        list_prefix = (prefix + "/") if prefix else ""
+        paginator = s3.get_paginator("list_objects_v2")
+        keys = []
+        for page in paginator.paginate(Bucket=bucket, Prefix=list_prefix):
+            for obj in page.get("Contents", []):
+                keys.append(obj["Key"])
+    except Exception as exc:
+        print(f"[zsg.metrics] WARNING: failed to list S3 metrics objects: {exc}",
+              file=sys.stderr)
+        return []
+
+    records = []
+    for key in keys:
+        try:
+            resp = s3.get_object(Bucket=bucket, Key=key)
+            body = resp["Body"].read().decode("utf-8")
+            records.append(json.loads(body))
+        except Exception:
+            pass  # skip unreadable/malformed objects
+    return records
+
+
 def append_record(
     *,
     provider: str,
@@ -95,7 +233,7 @@ def append_record(
     round_trip_ms: float,
     user: str,
 ) -> None:
-    """Append one metrics record to the log file.
+    """Append one metrics record to the active backend (file or S3).
 
     This function is best-effort: any I/O or serialisation error is caught,
     printed to stderr, and swallowed so callers always continue normally.
@@ -104,6 +242,9 @@ def append_record(
 
         {"ts": "<ISO-UTC>", "provider": "...", "model": "...",
          "ok": true/false, "round_trip_ms": 123.4, "user": "abc123..."}
+
+    Backend selection: if ZSG_METRICS_PATH starts with ``s3://``, the record is
+    written to S3; otherwise it is appended to a local file (the default).
 
     Args:
         provider:      The LLM provider string (e.g. "purdue_genai").
@@ -120,23 +261,36 @@ def append_record(
         "round_trip_ms": round(round_trip_ms, 3),
         "user": user,
     }
-    try:
-        line = json.dumps(record, ensure_ascii=False) + "\n"
-        log_file = _log_path()
-        with _log_lock:
-            with open(log_file, "a", encoding="utf-8") as fh:
-                fh.write(line)
-    except Exception as exc:  # pragma: no cover — defensive only
-        print(f"[zsg.metrics] WARNING: failed to write metrics record: {exc}",
-              file=sys.stderr)
+    uri = _metrics_uri()
+    if _is_s3_uri(uri):
+        bucket, prefix = _parse_s3_uri(uri)
+        _append_record_s3(record, bucket, prefix)
+    else:
+        try:
+            line = json.dumps(record, ensure_ascii=False) + "\n"
+            log_file = _log_path()
+            with _log_lock:
+                with open(log_file, "a", encoding="utf-8") as fh:
+                    fh.write(line)
+        except Exception as exc:  # pragma: no cover — defensive only
+            print(f"[zsg.metrics] WARNING: failed to write metrics record: {exc}",
+                  file=sys.stderr)
 
 
-def load_records() -> list[dict]:
-    """Read and parse all records from the metrics log.
+def load_records() -> list:
+    """Read and parse all records from the active backend (file or S3).
 
     Read-only.  Honors ZSG_METRICS_PATH.  Returns an empty list for a
-    missing/empty log; silently skips malformed lines.
+    missing/empty log; silently skips malformed lines (file) or objects (S3).
+
+    Backend selection: if ZSG_METRICS_PATH starts with ``s3://``, records are
+    read from S3 via list + get; otherwise from the local file (the default).
     """
+    uri = _metrics_uri()
+    if _is_s3_uri(uri):
+        bucket, prefix = _parse_s3_uri(uri)
+        return _load_records_s3(bucket, prefix)
+    # File backend
     log_path = _log_path()
     if not log_path.exists():
         return []
