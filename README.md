@@ -4,6 +4,8 @@ Turn Zotero PDF annotations into a self-contained, interactive HTML study guide 
 
 The content-generation step is powered by **[Purdue GenAI Studio](https://genai.rcac.purdue.edu)** by default (other LLM providers are supported behind a single seam).
 
+The app runs two ways: a **hosted web app** (live on AWS ECS Express Mode — open the URL, paste your Purdue GenAI key in Setup, and go), or the **local CLI/dev-server** walkthrough below. Both share the same pipeline and the same human-in-the-loop review step.
+
 ---
 
 ## How it works
@@ -42,22 +44,31 @@ API keys are read from config **or** environment variables and are never logged.
 
 **Two runtime modes, differing in where state lives:**
 
-| | Server-state mode (default, `/`) | Client mode (`/?mode=client`) |
+| | Client mode (default on the hosted app) | Server-state mode (`/?mode=server`) |
 |---|---|---|
-| State | server's local disk (`projects/<slug>/*.json`) | browser IndexedDB |
-| Server role | stateful | **stateless transformer** |
-| Multi-user | single-user | safe (nothing shared server-side) |
+| State | browser IndexedDB | server's local disk (`projects/<slug>/*.json`) |
+| Server role | **stateless transformer** | stateful |
+| Multi-user | safe (nothing shared server-side) | single-user |
 
 The stateless path is the deployment-friendly one: the `/api/v2/*` routes in
 [`src/zsg/verify.py`](src/zsg/verify.py) take data in the request body and return transformed
 data, writing nothing to disk (`parse` → `sections` → `llm` → `build`). It's end-to-end
-tested (Playwright) but currently opt-in via `?mode=client`.
+tested (Playwright). A fresh web session defaults to client mode; `?mode=server` opts into the
+local-disk pipeline used by the CLI walkthrough below.
 
-**Status / not yet productionized:** the app runs on Flask's development server
-([`src/zsg/app.py`](src/zsg/app.py)) and the default mode is single-user. A multi-user hosted
-deployment would mean defaulting to the stateless client-mode path and running behind a
-production WSGI server (e.g. gunicorn). The architecture supports this; it isn't switched on
-yet.
+**Hosted deployment (live).** The app is containerized (gunicorn behind a Docker image — see
+the [`Dockerfile`](Dockerfile)) and deployed on **AWS ECS Express Mode**. In the hosted app
+each user pastes their own Purdue GenAI key in the Setup tab (sent per request, never stored
+server-side), and per-call metrics are persisted durably to S3. The full build-push-deploy
+steps live in the [deploy runbook](deploy/README.md). The image **must** be built for
+`linux/amd64` (ECS Fargate is x86_64). To run it locally instead, use Flask's dev server via
+`python -m zsg.app`.
+
+**In-app onboarding.** The web app guides a first-time user end to end: it lands on the
+Pipeline tab, shows a 5-stage flow indicator, frames the human-in-the-loop review step ("AI
+drafts, you review & approve — nothing is exported until you do"), teaches the Zotero color
+conventions in-app, and offers a re-openable "How this works" overview — so an instructor
+never has to read this README or touch a terminal to use it.
 
 ---
 
@@ -215,6 +226,15 @@ The dashboard charts latency over time, the latency distribution, calls and succ
 broken down by provider/model, and calls per user. It inlines only the metrics-schema
 fields, so the same security guarantee holds — no raw keys, prompts, or responses.
 
+**Storage backend (file or S3).** The log location is set by `ZSG_METRICS_PATH`. With no value
+(or a plain path) it writes the local `metrics.jsonl` file — the default, unchanged. Set it to
+an `s3://bucket/prefix` URI to ship each record to **Amazon S3** instead (one object per
+record, date-partitioned), so metrics survive container restarts on the ephemeral hosted
+filesystem. The report and dashboard read back from whichever backend is active. S3 access uses
+ambient AWS credentials (on the hosted app, the ECS **task role** — no keys in the image);
+`boto3` is imported only on the S3 path, so local file-mode installs don't need it. Writes are
+best-effort — a metrics failure never breaks or slows an LLM call.
+
 ---
 
 ## Color configuration
@@ -252,6 +272,8 @@ zotero-study-guide/
 ├── color_config.yaml         Instructor-editable color meanings
 ├── llm_config.yaml           Model endpoint configuration
 ├── app_config.json           Runtime config (gitignored; holds API keys)
+├── Dockerfile                Production image (gunicorn; build for linux/amd64)
+├── wsgi.py                   gunicorn entrypoint for the container
 │
 ├── src/zsg/                  The pipeline package (run as `python -m zsg.<stage>`)
 │   ├── __init__.py           Defines PKG_DIR (assets) and PROJECT_ROOT (data)
@@ -261,12 +283,17 @@ zotero-study-guide/
 │   ├── verify.py             Flask review app + stateless v2 API
 │   ├── build_guide.py        Assemble approved JSON → output.html
 │   ├── json_repair.py        Fix malformed LLM JSON output
+│   ├── metrics.py            Per-call metrics log (file or S3) + report
+│   ├── metrics_dashboard.py  Self-contained HTML analytics dashboard
 │   ├── pipeline_runner.py    Subprocess runner used by the review UI
 │   ├── app.py                Local dev-server launcher
 │   ├── prompts/              narrative.txt, quiz.txt
 │   ├── templates/            review.html (review app frontend)
 │   └── static/               review.* (review UI), guide.* (inlined into output),
+│                             guides.js (in-app onboarding/help),
 │                             client-mode.js / storage.js (browser client mode)
+│
+├── deploy/                   AWS ECS Express deploy runbook + push_and_deploy.sh
 │
 ├── projects/                 Per-course working data
 │   └── <project_name>/
