@@ -18,6 +18,7 @@
     <button class="tab-btn" data-tab="tab-export">Export</button>
   </nav>
   <div class="header-spacer"></div>
+  <button id="how-it-works-btn" class="how-it-works-btn" aria-label="How this works">How this works</button>
   <span id="progress-label"></span>
 </header>
 
@@ -41,6 +42,10 @@
 
 <!-- ── Pipeline tab ───────────────────────────────────────────── -->
 <div id="tab-pipeline" class="tab-panel active">
+  <div class="tab-help-hint" id="pipeline-help-hint">
+    <span class="tab-help-hint-icon">&#9432;</span>
+    <span>Upload your Zotero annotation export here. The pipeline parses your highlights, groups them into sections, and calls the AI to write first drafts — then head to <strong>Narrative Review</strong> to check the output.</span>
+  </div>
   <div class="empty-state">
     <span class="spinner"></span> Loading…
   </div>
@@ -51,6 +56,10 @@
   <div class="hitl-banner" id="narrative-hitl-banner">
     <span class="hitl-banner-icon">&#10003;</span>
     <span>AI wrote these drafts. <strong>Review and approve each section</strong> — nothing is exported until you do.</span>
+  </div>
+  <div class="tab-help-hint" id="narrative-help-hint">
+    <span class="tab-help-hint-icon">&#9432;</span>
+    <span>Each card shows your source highlights on the left and the AI draft on the right. Click any field to edit it — changes save automatically. Click an annotation to see which generated fields it informed. When a section looks right, click <strong>Approve</strong>. You can unapprove and re-edit at any time.</span>
   </div>
   <div id="narrative-sections">
     <div class="empty-state">
@@ -65,6 +74,10 @@
     <span class="hitl-banner-icon">&#10003;</span>
     <span>AI generated these quiz questions. <strong>Review and approve each set</strong> — only approved sections are included in the export.</span>
   </div>
+  <div class="tab-help-hint" id="quiz-help-hint">
+    <span class="tab-help-hint-icon">&#9432;</span>
+    <span>Questions are generated from your red (Quiz-worthy) highlights. Check that each question is clear, the correct answer is accurate, and the distractors are plausible but unambiguous. Edit any field inline, regenerate individual questions with <strong>↻</strong>, or add your own with <strong>+ Add Question</strong>. Click <strong>Approve Quiz</strong> when a section is ready.</span>
+  </div>
   <div id="quiz-sections">
     <div class="empty-state">
       <span class="spinner"></span> Loading…
@@ -74,6 +87,10 @@
 
 <!-- ── Export tab ────────────────────────────────────────────── -->
 <div id="tab-export" class="tab-panel">
+  <div class="tab-help-hint" id="export-help-hint">
+    <span class="tab-help-hint-icon">&#9432;</span>
+    <span>Configure your guide's title, theme, and navigation, then click <strong>Build Guide</strong>. The preview panel shows exactly which approved sections and quiz questions will be included. The result is a single self-contained HTML file you can share with students directly — no server or installation required.</span>
+  </div>
   <div class="export-layout">
 
     <!-- Left: settings form -->
@@ -134,6 +151,33 @@
 
 <div id="toast" class="toast"></div>
 
+<!-- ── First-run "How this works" modal ─────────────────────────────── -->
+<div id="intro-modal" class="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title" hidden>
+  <div class="intro-modal-backdrop"></div>
+  <div class="intro-modal-box">
+    <div class="intro-modal-header">
+      <h2 id="intro-modal-title">How this works</h2>
+      <button class="intro-modal-close" id="intro-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="intro-modal-body">
+      <p class="intro-modal-lead">You annotate in Zotero. The AI drafts. <strong>You review and approve.</strong> Nothing reaches students until you say so.</p>
+
+      <ol class="intro-steps">
+        <li><strong>Setup</strong> — Paste your API key and confirm the AI model. Optionally rename what each highlight color means for your course.</li>
+        <li><strong>Pipeline</strong> — Create a project, export your Zotero annotations as HTML, and upload the file. The app parses highlights, groups them into sections, and calls the AI to write first drafts.</li>
+        <li><strong>Narrative Review</strong> — Read each section side-by-side with your source highlights. Edit freely, then click <em>Approve</em> when you're satisfied. Nothing is exported until every section you want is approved.</li>
+        <li><strong>Quiz Review</strong> — For approved narrative sections, generate quiz questions from your red (Quiz-worthy) highlights. Review, edit, and approve each set.</li>
+        <li><strong>Export</strong> — Choose a title, theme, and navigation style, then click <em>Build Guide</em>. You get a single self-contained HTML file ready to share with students.</li>
+      </ol>
+
+      <p class="intro-modal-note">The AI never touches your final guide without your review. Every section and quiz set must be explicitly approved before it is included in the export.</p>
+    </div>
+    <div class="intro-modal-footer">
+      <button class="intro-modal-dismiss" id="intro-modal-dismiss">Got it — let me start</button>
+    </div>
+  </div>
+</div>
+
 <link rel="stylesheet" href="/static/app.css">
 <!-- Client-side storage layer + fetch interceptor. These load first so they
      can install /api/* overrides before review.js/app.js make any calls.
@@ -148,5 +192,6 @@
 <script src="/static/client-mode.js"></script>
 <script src="/static/review.js"></script>
 <script src="/static/app.js"></script>
+<script src="/static/guides.js"></script>
 </body>
 </html>
