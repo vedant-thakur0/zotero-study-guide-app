@@ -895,3 +895,217 @@ header h1 { font-size: 15px; font-weight: 600; white-space: nowrap; }
   border-top: 1px solid var(--border);
   background: var(--bg);
 }
+
+/* ── "How this works" header button ────────────────────────── */
+.how-it-works-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.how-it-works-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── Per-tab contextual help banner ────────────────────────── */
+.tab-help-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: #1e40af;
+  line-height: 1.5;
+}
+.tab-help-hint strong { color: #1e3a8a; }
+.tab-help-hint-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #2563eb;
+}
+
+/* ── Zotero color guide (in Setup tab) ─────────────────────── */
+.color-guide {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.color-guide-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.color-guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.color-guide-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.color-guide-table td {
+  padding: 6px 8px;
+  vertical-align: top;
+  line-height: 1.45;
+  border-bottom: 1px solid #f0f0ee;
+}
+.color-guide-table tr:last-child td { border-bottom: none; }
+.color-guide-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.color-guide-color-cell {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.color-guide-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 10px;
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.color-guide-note strong { color: var(--text); }
+
+/* ── First-run "How this works" modal ──────────────────────── */
+.intro-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.intro-modal[hidden] { display: none; }
+
+.intro-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.intro-modal-box {
+  position: relative;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  max-width: 560px;
+  width: calc(100% - 32px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.intro-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.intro-modal-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.intro-modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.15s;
+}
+.intro-modal-close:hover { color: var(--text); }
+
+.intro-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.intro-modal-lead {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.intro-modal-lead strong { color: var(--accent); }
+
+.intro-steps {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.intro-steps li strong { color: var(--accent); }
+
+.intro-modal-note {
+  font-size: 12px;
+  color: var(--muted);
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 10px 14px;
+  line-height: 1.5;
+}
+
+.intro-modal-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+.intro-modal-dismiss {
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.intro-modal-dismiss:hover { background: #1d4ed8; }
