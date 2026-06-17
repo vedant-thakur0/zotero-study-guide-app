@@ -60,6 +60,8 @@ metrics.jsonl
 metrics.log
 *.metrics.jsonl
 projects/*/metrics.jsonl
+# Generated dashboard artifact (scripts/metrics.sh --html) — contains live data.
+metrics_dashboard.html
 
 # --- OS junk ---
 .DS_Store
