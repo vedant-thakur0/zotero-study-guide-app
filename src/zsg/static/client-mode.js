@@ -22,7 +22,17 @@
   if (URL_FLAG === "client") {
     try { localStorage.setItem("zsg_client_mode", "1"); } catch (e) {}
   } else if (URL_FLAG === "server") {
-    try { localStorage.removeItem("zsg_client_mode"); } catch (e) {}
+    // Explicit opt-out: ?mode=server disables client mode for this session.
+    try { localStorage.setItem("zsg_client_mode", "0"); } catch (e) {}
+  } else {
+    // Default: enable client mode for a fresh session (no stored preference).
+    // This makes the hosted app stateless / multi-user-safe out of the box.
+    // Users who previously set "0" via ?mode=server keep their preference.
+    try {
+      if (localStorage.getItem("zsg_client_mode") === null) {
+        localStorage.setItem("zsg_client_mode", "1");
+      }
+    } catch (e) {}
   }
 
   function isEnabled() {

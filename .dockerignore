@@ -1,0 +1,40 @@
+# ── Secrets / live config (must never enter the image) ───────────────────────
+app_config.json
+app_config.json.lock
+.env
+.env.*
+
+# ── Runtime / working data ────────────────────────────────────────────────────
+projects/
+state.json
+state.json.lock
+sections.json
+metrics.jsonl
+
+# ── Lock files ────────────────────────────────────────────────────────────────
+*.lock
+
+# ── Dev / CI artefacts ────────────────────────────────────────────────────────
+.claude/
+tests/
+sample-data/
+interactive_practice_exam/
+docs/
+projects.md
+
+# ── VCS / tooling ─────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitleaks.toml
+.pytest_cache/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# ── Build / packaging artefacts ───────────────────────────────────────────────
+.venv/
+venv/
+*.egg-info/
+dist/
+build/

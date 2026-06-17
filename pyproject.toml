@@ -11,6 +11,7 @@ license = "MIT"
 requires-python = ">=3.9"
 dependencies = [
     "flask>=3.0",
+    "gunicorn>=21.2",
     "pyzotero>=1.5",
     "requests>=2.31",
     "pyyaml>=6.0",
