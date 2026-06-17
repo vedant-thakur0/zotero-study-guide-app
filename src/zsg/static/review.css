@@ -67,7 +67,101 @@ header h1 { font-size: 15px; font-weight: 600; white-space: nowrap; }
 
 .header-spacer { flex: 1; }
 
-#progress-label { font-size: 12px; color: var(--muted); }
+#progress-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+/* ── Flow indicator ──────────────────────────────────────────── */
+#flow-indicator {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  position: sticky;
+  top: 52px;
+  z-index: 99;
+}
+
+.flow-steps {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  height: 36px;
+  counter-reset: flow-counter;
+}
+
+.flow-step {
+  position: relative;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 14px 0 10px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  counter-increment: flow-counter;
+  transition: color 0.15s;
+}
+
+.flow-step::before {
+  content: counter(flow-counter);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  margin-right: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+/* Chevron separator after each step except the last */
+.flow-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 5px solid var(--border);
+}
+
+.flow-step.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.flow-step.active::before {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Review steps get a subtle highlight to signal "this is the key stage" */
+.flow-step--review.active {
+  color: var(--approved);
+}
+
+.flow-step--review.active::before {
+  background: var(--approved);
+  color: #fff;
+}
 
 /* ── Tab panels ──────────────────────────────────────────────── */
 .tab-panel { display: none; padding: 24px; }
@@ -91,7 +185,10 @@ header h1 { font-size: 15px; font-weight: 600; white-space: nowrap; }
   transition: box-shadow 0.15s;
 }
 
-.section-card.approved { border-color: var(--approved); }
+.section-card.approved {
+  border-color: var(--approved);
+  border-left-width: 4px;
+}
 
 .section-header {
   display: flex;
@@ -345,6 +442,37 @@ header h1 { font-size: 15px; font-weight: 600; white-space: nowrap; }
 }
 .reorder-btn:hover { background: var(--bg); color: var(--text); }
 .reorder-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Human-in-the-loop framing banner ───────────────────────── */
+.hitl-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #166534;
+  line-height: 1.4;
+}
+
+.hitl-banner strong { color: #14532d; }
+
+.hitl-banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
 
 /* ── Empty / loading states ──────────────────────────────────── */
 .empty-state {
@@ -615,7 +743,10 @@ header h1 { font-size: 15px; font-weight: 600; white-space: nowrap; }
   overflow: hidden;
 }
 
-.quiz-section-card.approved { border-color: var(--approved); }
+.quiz-section-card.approved {
+  border-color: var(--approved);
+  border-left-width: 4px;
+}
 
 .quiz-section-header {
   display: flex;

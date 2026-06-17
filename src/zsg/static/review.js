@@ -515,6 +515,12 @@ function activeTabId() {
   return document.querySelector(".tab-btn.active")?.dataset.tab ?? "";
 }
 
+function updateFlowIndicator(tabId) {
+  document.querySelectorAll(".flow-step").forEach((step) => {
+    step.classList.toggle("active", step.dataset.tab === tabId);
+  });
+}
+
 function switchToTab(tabId) {
   document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
@@ -522,6 +528,7 @@ function switchToTab(tabId) {
   if (btn) btn.classList.add("active");
   const panel = document.getElementById(tabId);
   if (panel) panel.classList.add("active");
+  updateFlowIndicator(tabId);
   try { localStorage.setItem("zsg_last_tab", tabId); } catch (e) {}
   if (tabId === "tab-quiz")      renderQuizTab();
   if (tabId === "tab-narrative") renderNarrativeTab();
@@ -547,8 +554,13 @@ async function init() {
     const lastTab = localStorage.getItem("zsg_last_tab");
     if (lastTab && lastTab !== "tab-pipeline" && document.getElementById(lastTab)) {
       switchToTab(lastTab);
+    } else {
+      // Sync the flow indicator with the default active tab (Pipeline)
+      updateFlowIndicator(activeTabId());
     }
-  } catch (e) {}
+  } catch (e) {
+    updateFlowIndicator(activeTabId());
+  }
 
   try {
     appState = await fetchState();
