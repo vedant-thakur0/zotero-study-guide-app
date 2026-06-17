@@ -45,6 +45,22 @@ tests/fixtures/golden/
 # --- Sample data: keep the example export, skip the large source PDF ---
 sample-data/*.pdf
 
+# --- Local Claude Code workspace (plans, settings, memory) ---
+.claude/
+
+# --- Local CodeMax project registry (planning next-actions; not source) ---
+/projects.md
+
+# --- Stray dev-server state written at repo root (real state lives in projects/*) ---
+/state.json
+
+# --- Metrics log (per-call latency/usage; auto-generated, never source) ---
+# Records are counts + latency + a key *fingerprint* — never raw keys/prompts.
+metrics.jsonl
+metrics.log
+*.metrics.jsonl
+projects/*/metrics.jsonl
+
 # --- OS junk ---
 .DS_Store
 Thumbs.db
