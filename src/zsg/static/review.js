@@ -484,6 +484,7 @@ function attachNarrativeListeners() {
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Generating…';
+      const progress = showGenProgress(btn);
       try {
         const result = await generateNarrative(sid);
         appState.sections[sid] = {
@@ -502,11 +503,24 @@ function attachNarrativeListeners() {
           ...(appState.sections[sid] ?? {}),
           narrative_error: err.message,
         };
+        progress.remove();
         btn.disabled = false;
         btn.textContent = originalText || "Generate with LLM";
       }
     });
   });
+}
+
+// Insert an indeterminate progress bar right after a Generate button while the
+// LLM call is in flight. Returns the element (remove it on error; on success
+// the tab re-renders and the bar disappears with the old DOM).
+function showGenProgress(btn) {
+  const bar = document.createElement("div");
+  bar.className = "gen-progress";
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-label", "Generating with AI");
+  btn.insertAdjacentElement("afterend", bar);
+  return bar;
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────
@@ -538,6 +552,10 @@ function switchToTab(tabId) {
 function initTabs() {
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => switchToTab(btn.dataset.tab));
+  });
+  // The flow indicator steps mirror the tabs — make them navigate too.
+  document.querySelectorAll(".flow-step").forEach((step) => {
+    step.addEventListener("click", () => switchToTab(step.dataset.tab));
   });
 }
 
@@ -1036,6 +1054,7 @@ function attachQuizListeners() {
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Generating…';
+      const progress = showGenProgress(btn);
       try {
         const result = await generateQuiz(sid);
         appState.sections[sid] = {
@@ -1053,6 +1072,7 @@ function attachQuizListeners() {
           ...(appState.sections[sid] ?? {}),
           quiz_error: err.message,
         };
+        progress.remove();
         btn.disabled = false;
         btn.textContent = originalText || "Generate with LLM";
       }
