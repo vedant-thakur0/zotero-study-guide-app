@@ -275,7 +275,7 @@ function renderSectionCard(sectionId, idx) {
             </div>
             ` : `
             <div class="empty-state">
-              <p>${narrError ? "Generation failed." : "No content generated yet."}</p>
+              <p>${narrError ? "Generation failed. Retry to continue." : "Ready to draft this section."}</p>
               <button class="generate-btn inline-gen empty-state-btn" data-section="${sectionId}">Generate with LLM</button>
               ${narrError ? `<button class="generate-btn retry-narr-btn empty-state-btn" data-section="${sectionId}">↻ Retry</button>` : ""}
             </div>
@@ -306,8 +306,8 @@ function renderNarrativeTab() {
 
   if (!order.length) {
     container.innerHTML = `<div class="empty-state">
-      <p>No sections yet.</p>
-      <p class="empty-state-hint">Go to the <strong>Pipeline</strong> tab and upload your Zotero export to begin.</p>
+      <p>Start by uploading your Zotero export.</p>
+      <p class="empty-state-hint">Go to the <strong>Pipeline</strong> tab and upload your annotated export to parse sections and generate narratives.</p>
     </div>`;
     return;
   }
@@ -572,8 +572,8 @@ async function init() {
   } catch (err) {
     document.getElementById("narrative-sections").innerHTML = `
       <div class="empty-state">
-        <p>Could not load state: ${err.message}</p>
-        <p class="empty-state-hint">Couldn't load your work. Try reloading the page.</p>
+        <p>Could not load your work.</p>
+        <p class="empty-state-hint">Reload the page to try again. If the problem persists, check your connection and contact support.</p>
       </div>`;
   }
 }
@@ -609,7 +609,7 @@ async function loadExportPreview() {
 
     if (!data.sections?.length) {
       preview.innerHTML = `<div class="preview-empty">
-        No approved sections yet. Approve sections in the Narrative Review tab first.
+        Approve sections in the Narrative Review tab to preview your guide.
       </div>`;
       return;
     }
@@ -888,16 +888,14 @@ function renderQuizSection(sectionId) {
           ${hasQuiz ? questionsHtml : `
             <div class="empty-state empty-state--padded">
               ${quizError ? `
-                <p>Quiz generation failed.</p>
+                <p>Quiz generation failed. Retry to continue.</p>
                 <button class="generate-btn gen-quiz-btn empty-state-btn" data-section="${sectionId}">Generate with LLM</button>
-                <button class="generate-btn retry-quiz-btn empty-state-btn" data-section="${sectionId}">↻ Retry quiz</button>
+                <button class="generate-btn retry-quiz-btn empty-state-btn" data-section="${sectionId}">↻ Retry</button>
               ` : `
-                <p>This section has <strong>${quizWorthyCount}</strong> &#8220;${escapeHtml(quizLabel)}&#8221; annotation${quizWorthyCount !== 1 ? "s" : ""}.</p>
+                <p>Generate quiz questions from your <strong>${quizWorthyCount}</strong> &#8220;${escapeHtml(quizLabel)}&#8221; annotation${quizWorthyCount !== 1 ? "s" : ""}.</p>
                 <button class="generate-btn gen-quiz-btn empty-state-btn" data-section="${sectionId}">Generate with LLM</button>
                 <p class="empty-state-hint gate-prompt-hint">
-                  Or, add more &#8220;${escapeHtml(quizLabel)}&#8221; (${escapeHtml(quizColor)}) highlights in Zotero, re-export,
-                  and <button class="link-btn go-to-pipeline-btn" type="button">re-upload your export</button>
-                  to give the LLM more to work with.
+                  Need more quiz material? Add &#8220;${escapeHtml(quizLabel)}&#8221; (${escapeHtml(quizColor)}) highlights in Zotero, re-export, and <button class="link-btn go-to-pipeline-btn" type="button">re-upload here</button> to give the AI more content.
                 </p>
               `}
             </div>`}
@@ -927,9 +925,9 @@ function renderQuizTab() {
 
   if (!approvedSections.length) {
     container.innerHTML = `<div class="empty-state">
-      <p>No approved narrative sections yet.</p>
+      <p>Approve narrative sections to generate quizzes.</p>
       <p class="empty-state-hint">
-        Approve sections in the Narrative Review tab first.
+        Go to the Narrative Review tab, review sections, and click <strong>Approve</strong> to make them eligible for quiz generation.
       </p>
     </div>`;
     return;
