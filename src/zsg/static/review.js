@@ -306,7 +306,8 @@ function renderNarrativeTab() {
 
   if (!order.length) {
     container.innerHTML = `<div class="empty-state">
-      <p>No sections found. Run <code>preprocess.py</code> first.</p>
+      <p>No sections yet.</p>
+      <p class="empty-state-hint">Go to the <strong>Pipeline</strong> tab and upload your Zotero export to begin.</p>
     </div>`;
     return;
   }
@@ -414,7 +415,7 @@ function attachNarrativeListeners() {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const sid = btn.dataset.id;
-      if (!confirm(`Delete section "${sid}"? Its review state is removed. Re-run preprocess to regenerate.`)) return;
+      if (!confirm(`Delete section "${sid}"? Its review state will be removed. You can re-upload your Zotero export in the Pipeline tab to restore it.`)) return;
       const ok = await deleteSection(sid);
       if (!ok) { toast("Could not delete section"); return; }
       delete appState.sections[sid];
@@ -514,18 +515,22 @@ function activeTabId() {
   return document.querySelector(".tab-btn.active")?.dataset.tab ?? "";
 }
 
+function switchToTab(tabId) {
+  document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  if (btn) btn.classList.add("active");
+  const panel = document.getElementById(tabId);
+  if (panel) panel.classList.add("active");
+  try { localStorage.setItem("zsg_last_tab", tabId); } catch (e) {}
+  if (tabId === "tab-quiz")      renderQuizTab();
+  if (tabId === "tab-narrative") renderNarrativeTab();
+  if (tabId === "tab-export")    loadExportPreview();
+}
+
 function initTabs() {
   document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      const tabId = btn.dataset.tab;
-      document.getElementById(tabId).classList.add("active");
-      if (tabId === "tab-quiz")      renderQuizTab();
-      if (tabId === "tab-narrative") renderNarrativeTab();
-      if (tabId === "tab-export")    loadExportPreview();
-    });
+    btn.addEventListener("click", () => switchToTab(btn.dataset.tab));
   });
 }
 
@@ -534,14 +539,29 @@ function initTabs() {
 async function init() {
   initTabs();
   initExportTab();
+
+  // Restore the last visited tab, or fall back to the Pipeline default.
+  // The HTML already marks Pipeline as active, so we only need to act when
+  // the user has a stored preference pointing elsewhere.
+  try {
+    const lastTab = localStorage.getItem("zsg_last_tab");
+    if (lastTab && lastTab !== "tab-pipeline" && document.getElementById(lastTab)) {
+      switchToTab(lastTab);
+    }
+  } catch (e) {}
+
   try {
     appState = await fetchState();
-    renderNarrativeTab();
+    // Re-render whichever tab is now active so its content reflects loaded state.
+    const current = activeTabId();
+    if (current === "tab-narrative") renderNarrativeTab();
+    else if (current === "tab-quiz") renderQuizTab();
+    else if (current === "tab-export") loadExportPreview();
   } catch (err) {
     document.getElementById("narrative-sections").innerHTML = `
       <div class="empty-state">
         <p>Could not load state: ${err.message}</p>
-        <p class="empty-state-hint">Make sure verify.py is running.</p>
+        <p class="empty-state-hint">Couldn't load your work. Try reloading the page.</p>
       </div>`;
   }
 }
