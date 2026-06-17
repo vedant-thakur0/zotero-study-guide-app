@@ -21,6 +21,17 @@
   <span id="progress-label"></span>
 </header>
 
+<!-- ── Flow indicator ─────────────────────────────────────────── -->
+<div id="flow-indicator" aria-label="Workflow progress">
+  <ol class="flow-steps">
+    <li class="flow-step" data-tab="tab-setup">Setup</li>
+    <li class="flow-step" data-tab="tab-pipeline">Pipeline</li>
+    <li class="flow-step flow-step--review" data-tab="tab-narrative">Narrative Review</li>
+    <li class="flow-step flow-step--review" data-tab="tab-quiz">Quiz Review</li>
+    <li class="flow-step" data-tab="tab-export">Export</li>
+  </ol>
+</div>
+
 <!-- ── Setup tab ──────────────────────────────────────────────── -->
 <div id="tab-setup" class="tab-panel">
   <div class="empty-state">
@@ -37,6 +48,10 @@
 
 <!-- ── Narrative Review tab ──────────────────────────────────── -->
 <div id="tab-narrative" class="tab-panel">
+  <div class="hitl-banner" id="narrative-hitl-banner">
+    <span class="hitl-banner-icon">&#10003;</span>
+    <span>AI wrote these drafts. <strong>Review and approve each section</strong> — nothing is exported until you do.</span>
+  </div>
   <div id="narrative-sections">
     <div class="empty-state">
       <span class="spinner"></span> Loading…
@@ -46,6 +61,10 @@
 
 <!-- ── Quiz Review tab ───────────────────────────────────────── -->
 <div id="tab-quiz" class="tab-panel">
+  <div class="hitl-banner" id="quiz-hitl-banner">
+    <span class="hitl-banner-icon">&#10003;</span>
+    <span>AI generated these quiz questions. <strong>Review and approve each set</strong> — only approved sections are included in the export.</span>
+  </div>
   <div id="quiz-sections">
     <div class="empty-state">
       <span class="spinner"></span> Loading…
