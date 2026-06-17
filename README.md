@@ -185,6 +185,36 @@ zsg.app` loads it automatically if `python-dotenv` is installed. This is the rec
 posture for shared/hosted deployments so secrets never live in a tracked or on-disk config
 file.
 
+### Metrics log
+
+Every LLM call is logged (read-only) to `metrics.jsonl` in the project root (gitignored).
+Each line is a JSON record with: `ts` (ISO-8601 UTC timestamp), `provider` (e.g.
+`"purdue_genai"`), `model`, `ok` (bool), `round_trip_ms` (wall-clock time for the HTTP call),
+and `user` (16-char hex fingerprint of the API key, or `"none"` for keyless providers).
+
+**Security guarantee:** The log stores only a non-reversible fingerprint of the API key,
+never the raw key, Bearer headers, prompt text, or response body.
+
+To summarize the log:
+
+```bash
+python -m zsg.metrics
+```
+
+Prints: total calls, successful vs. failed split, latency min/median/p95/max (over
+successful calls), and unique users (distinct API key fingerprints).
+
+For a visual analytics dashboard, export a **self-contained HTML file** (no server, no
+external scripts — open it in any browser, like the study guides themselves):
+
+```bash
+python -m zsg.metrics --html metrics_dashboard.html
+```
+
+The dashboard charts latency over time, the latency distribution, calls and success rate
+broken down by provider/model, and calls per user. It inlines only the metrics-schema
+fields, so the same security guarantee holds — no raw keys, prompts, or responses.
+
 ---
 
 ## Color configuration

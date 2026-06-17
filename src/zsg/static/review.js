@@ -275,7 +275,7 @@ function renderSectionCard(sectionId, idx) {
             </div>
             ` : `
             <div class="empty-state">
-              <p>${narrError ? "Generation failed." : "No content generated yet."}</p>
+              <p>${narrError ? "Generation failed. Retry to continue." : "Ready to draft this section."}</p>
               <button class="generate-btn inline-gen empty-state-btn" data-section="${sectionId}">Generate with LLM</button>
               ${narrError ? `<button class="generate-btn retry-narr-btn empty-state-btn" data-section="${sectionId}">↻ Retry</button>` : ""}
             </div>
@@ -306,7 +306,8 @@ function renderNarrativeTab() {
 
   if (!order.length) {
     container.innerHTML = `<div class="empty-state">
-      <p>No sections found. Run <code>preprocess.py</code> first.</p>
+      <p>Start by uploading your Zotero export.</p>
+      <p class="empty-state-hint">Go to the <strong>Pipeline</strong> tab and upload your annotated export to parse sections and generate narratives.</p>
     </div>`;
     return;
   }
@@ -414,7 +415,7 @@ function attachNarrativeListeners() {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const sid = btn.dataset.id;
-      if (!confirm(`Delete section "${sid}"? Its review state is removed. Re-run preprocess to regenerate.`)) return;
+      if (!confirm(`Delete section "${sid}"? Its review state will be removed. You can re-upload your Zotero export in the Pipeline tab to restore it.`)) return;
       const ok = await deleteSection(sid);
       if (!ok) { toast("Could not delete section"); return; }
       delete appState.sections[sid];
@@ -483,6 +484,7 @@ function attachNarrativeListeners() {
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Generating…';
+      const progress = showGenProgress(btn);
       try {
         const result = await generateNarrative(sid);
         appState.sections[sid] = {
@@ -501,11 +503,24 @@ function attachNarrativeListeners() {
           ...(appState.sections[sid] ?? {}),
           narrative_error: err.message,
         };
+        progress.remove();
         btn.disabled = false;
         btn.textContent = originalText || "Generate with LLM";
       }
     });
   });
+}
+
+// Insert an indeterminate progress bar right after a Generate button while the
+// LLM call is in flight. Returns the element (remove it on error; on success
+// the tab re-renders and the bar disappears with the old DOM).
+function showGenProgress(btn) {
+  const bar = document.createElement("div");
+  bar.className = "gen-progress";
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-label", "Generating with AI");
+  btn.insertAdjacentElement("afterend", bar);
+  return bar;
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────
@@ -514,18 +529,33 @@ function activeTabId() {
   return document.querySelector(".tab-btn.active")?.dataset.tab ?? "";
 }
 
+function updateFlowIndicator(tabId) {
+  document.querySelectorAll(".flow-step").forEach((step) => {
+    step.classList.toggle("active", step.dataset.tab === tabId);
+  });
+}
+
+function switchToTab(tabId) {
+  document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  if (btn) btn.classList.add("active");
+  const panel = document.getElementById(tabId);
+  if (panel) panel.classList.add("active");
+  updateFlowIndicator(tabId);
+  try { localStorage.setItem("zsg_last_tab", tabId); } catch (e) {}
+  if (tabId === "tab-quiz")      renderQuizTab();
+  if (tabId === "tab-narrative") renderNarrativeTab();
+  if (tabId === "tab-export")    loadExportPreview();
+}
+
 function initTabs() {
   document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      const tabId = btn.dataset.tab;
-      document.getElementById(tabId).classList.add("active");
-      if (tabId === "tab-quiz")      renderQuizTab();
-      if (tabId === "tab-narrative") renderNarrativeTab();
-      if (tabId === "tab-export")    loadExportPreview();
-    });
+    btn.addEventListener("click", () => switchToTab(btn.dataset.tab));
+  });
+  // The flow indicator steps mirror the tabs — make them navigate too.
+  document.querySelectorAll(".flow-step").forEach((step) => {
+    step.addEventListener("click", () => switchToTab(step.dataset.tab));
   });
 }
 
@@ -534,14 +564,34 @@ function initTabs() {
 async function init() {
   initTabs();
   initExportTab();
+
+  // Restore the last visited tab, or fall back to the Pipeline default.
+  // The HTML already marks Pipeline as active, so we only need to act when
+  // the user has a stored preference pointing elsewhere.
+  try {
+    const lastTab = localStorage.getItem("zsg_last_tab");
+    if (lastTab && lastTab !== "tab-pipeline" && document.getElementById(lastTab)) {
+      switchToTab(lastTab);
+    } else {
+      // Sync the flow indicator with the default active tab (Pipeline)
+      updateFlowIndicator(activeTabId());
+    }
+  } catch (e) {
+    updateFlowIndicator(activeTabId());
+  }
+
   try {
     appState = await fetchState();
-    renderNarrativeTab();
+    // Re-render whichever tab is now active so its content reflects loaded state.
+    const current = activeTabId();
+    if (current === "tab-narrative") renderNarrativeTab();
+    else if (current === "tab-quiz") renderQuizTab();
+    else if (current === "tab-export") loadExportPreview();
   } catch (err) {
     document.getElementById("narrative-sections").innerHTML = `
       <div class="empty-state">
-        <p>Could not load state: ${err.message}</p>
-        <p class="empty-state-hint">Make sure verify.py is running.</p>
+        <p>Could not load your work.</p>
+        <p class="empty-state-hint">Reload the page to try again. If the problem persists, check your connection and contact support.</p>
       </div>`;
   }
 }
@@ -577,7 +627,7 @@ async function loadExportPreview() {
 
     if (!data.sections?.length) {
       preview.innerHTML = `<div class="preview-empty">
-        No approved sections yet. Approve sections in the Narrative Review tab first.
+        Approve sections in the Narrative Review tab to preview your guide.
       </div>`;
       return;
     }
@@ -856,16 +906,14 @@ function renderQuizSection(sectionId) {
           ${hasQuiz ? questionsHtml : `
             <div class="empty-state empty-state--padded">
               ${quizError ? `
-                <p>Quiz generation failed.</p>
+                <p>Quiz generation failed. Retry to continue.</p>
                 <button class="generate-btn gen-quiz-btn empty-state-btn" data-section="${sectionId}">Generate with LLM</button>
-                <button class="generate-btn retry-quiz-btn empty-state-btn" data-section="${sectionId}">↻ Retry quiz</button>
+                <button class="generate-btn retry-quiz-btn empty-state-btn" data-section="${sectionId}">↻ Retry</button>
               ` : `
-                <p>This section has <strong>${quizWorthyCount}</strong> &#8220;${escapeHtml(quizLabel)}&#8221; annotation${quizWorthyCount !== 1 ? "s" : ""}.</p>
+                <p>Generate quiz questions from your <strong>${quizWorthyCount}</strong> &#8220;${escapeHtml(quizLabel)}&#8221; annotation${quizWorthyCount !== 1 ? "s" : ""}.</p>
                 <button class="generate-btn gen-quiz-btn empty-state-btn" data-section="${sectionId}">Generate with LLM</button>
                 <p class="empty-state-hint gate-prompt-hint">
-                  Or, add more &#8220;${escapeHtml(quizLabel)}&#8221; (${escapeHtml(quizColor)}) highlights in Zotero, re-export,
-                  and <button class="link-btn go-to-pipeline-btn" type="button">re-upload your export</button>
-                  to give the LLM more to work with.
+                  Need more quiz material? Add &#8220;${escapeHtml(quizLabel)}&#8221; (${escapeHtml(quizColor)}) highlights in Zotero, re-export, and <button class="link-btn go-to-pipeline-btn" type="button">re-upload here</button> to give the AI more content.
                 </p>
               `}
             </div>`}
@@ -895,9 +943,9 @@ function renderQuizTab() {
 
   if (!approvedSections.length) {
     container.innerHTML = `<div class="empty-state">
-      <p>No approved narrative sections yet.</p>
+      <p>Approve narrative sections to generate quizzes.</p>
       <p class="empty-state-hint">
-        Approve sections in the Narrative Review tab first.
+        Go to the Narrative Review tab, review sections, and click <strong>Approve</strong> to make them eligible for quiz generation.
       </p>
     </div>`;
     return;
@@ -1006,6 +1054,7 @@ function attachQuizListeners() {
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Generating…';
+      const progress = showGenProgress(btn);
       try {
         const result = await generateQuiz(sid);
         appState.sections[sid] = {
@@ -1023,6 +1072,7 @@ function attachQuizListeners() {
           ...(appState.sections[sid] ?? {}),
           quiz_error: err.message,
         };
+        progress.remove();
         btn.disabled = false;
         btn.textContent = originalText || "Generate with LLM";
       }

@@ -113,6 +113,17 @@
         temperature: 0.1,
         max_tokens: 8192,
       },
+      // Mirrors color_config.yaml so client-mode (which has no server-side
+      // config file) shows the same default annotation-color meanings in the
+      // Setup tab. Keep in sync with color_config.yaml.
+      colors: {
+        yellow: { label: "Key concepts", description: "Definitions, core ideas, important terms" },
+        red: { label: "Quiz-worthy facts", description: "Dates, events, specific claims to test" },
+        green: { label: "People & organizations", description: "Biographical information, institutional roles" },
+        blue: { label: "Themes & arguments", description: "Analytical threads, overarching narratives" },
+        purple: { label: "Connections", description: "Cross-references, links between topics" },
+        orange: { label: "Examples", description: "Case studies, illustrative instances" },
+      },
     };
   }
 
