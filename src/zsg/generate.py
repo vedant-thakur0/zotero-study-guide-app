@@ -38,11 +38,13 @@ import os
 import re
 import sys
 import threading
+import time
 import yaml
 from pathlib import Path
 
 from zsg import PKG_DIR, PROJECT_ROOT
 from zsg.json_repair import attempt_repair
+import zsg.metrics as _metrics
 
 NARRATIVE_PROMPT         = (PKG_DIR / "prompts" / "narrative.txt").read_text(encoding="utf-8")
 QUIZ_PROMPT              = (PKG_DIR / "prompts" / "quiz.txt").read_text(encoding="utf-8")
@@ -101,8 +103,22 @@ def call_llm(prompt: str, cfg: dict, dry_run: bool = False) -> str:
                 "repeat_penalty": cfg.get("repeat_penalty", 1.05),
             },
         }
-        resp = requests.post(f"{base_url}/api/generate", json=payload, timeout=120)
-        resp.raise_for_status()
+        _ollama_key = cfg.get("api_key")  # typically absent for local ollama
+        _user = _metrics.key_fingerprint(_ollama_key)
+        _t0 = time.monotonic()
+        try:
+            resp = requests.post(f"{base_url}/api/generate", json=payload, timeout=120)
+            resp.raise_for_status()
+        except Exception:
+            _metrics.append_record(
+                provider=provider, model=model, ok=False,
+                round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
+            )
+            raise
+        _metrics.append_record(
+            provider=provider, model=model, ok=True,
+            round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
+        )
         return resp.json()["response"]
 
     if provider in ("vllm", "lmstudio", "openai"):
@@ -121,13 +137,26 @@ def call_llm(prompt: str, cfg: dict, dry_run: bool = False) -> str:
         api_key = cfg.get("api_key") or os.environ.get("OPENAI_API_KEY")
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
-        resp = requests.post(
-            f"{base_url}/v1/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=120,
+        _user = _metrics.key_fingerprint(api_key)
+        _t0 = time.monotonic()
+        try:
+            resp = requests.post(
+                f"{base_url}/v1/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=120,
+            )
+            resp.raise_for_status()
+        except Exception:
+            _metrics.append_record(
+                provider=provider, model=model, ok=False,
+                round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
+            )
+            raise
+        _metrics.append_record(
+            provider=provider, model=model, ok=True,
+            round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
         )
-        resp.raise_for_status()
         body = resp.json()
         choice = body["choices"][0]
         finish_reason = choice.get("finish_reason")
@@ -150,13 +179,26 @@ def call_llm(prompt: str, cfg: dict, dry_run: bool = False) -> str:
             "max_tokens": max_tokens,
             "stream": False,
         }
-        resp = requests.post(
-            endpoint,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json=payload,
-            timeout=120,
+        _user = _metrics.key_fingerprint(api_key)
+        _t0 = time.monotonic()
+        try:
+            resp = requests.post(
+                endpoint,
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json=payload,
+                timeout=120,
+            )
+            resp.raise_for_status()
+        except Exception:
+            _metrics.append_record(
+                provider=provider, model=model, ok=False,
+                round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
+            )
+            raise
+        _metrics.append_record(
+            provider=provider, model=model, ok=True,
+            round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
         )
-        resp.raise_for_status()
         body = resp.json()
         choice = body["choices"][0]
         if choice.get("finish_reason") == "length":
@@ -199,15 +241,28 @@ def call_llm(prompt: str, cfg: dict, dry_run: bool = False) -> str:
             if system_text else _anthropic.NOT_GIVEN
         )
 
-        msg = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system_param,
-            messages=[
-                {"role": "user",      "content": user_text},
-                {"role": "assistant", "content": "{"},
-            ],
+        _user = _metrics.key_fingerprint(api_key)
+        _t0 = time.monotonic()
+        try:
+            msg = client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=system_param,
+                messages=[
+                    {"role": "user",      "content": user_text},
+                    {"role": "assistant", "content": "{"},
+                ],
+            )
+        except Exception:
+            _metrics.append_record(
+                provider=provider, model=model, ok=False,
+                round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
+            )
+            raise
+        _metrics.append_record(
+            provider=provider, model=model, ok=True,
+            round_trip_ms=(time.monotonic() - _t0) * 1000, user=_user,
         )
         text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
         if getattr(msg, "stop_reason", None) == "max_tokens":
