@@ -182,6 +182,45 @@ AWS-specific, will **not** transfer: the three IAM roles and the ECS/ALB provisi
 
 ---
 
+## Cost — ALB trimmed to 2 AZs
+
+Express Mode fans the managed ALB across **all 6 `us-east-1` availability zones**, and each
+zone's load-balancer node holds a **public IPv4 address**. Since 2024-02-01 AWS bills
+**$0.005/hr per public IPv4** (~$3.65/mo each), so the default layout ran **7 public IPs**
+(6 ALB + 1 Fargate task) ≈ **$25/mo** — the single biggest line on this account's bill,
+reported under "Amazon Virtual Private Cloud" (the VPC itself is free; the charge is the IPs).
+
+An ALB only needs **2 AZs**, so the live deploy was trimmed to `us-east-1a` + `us-east-1c`.
+**Keep the AZ the task runs in** — find it via the target group's `Target.AvailabilityZone`
+(it was `us-east-1c`). Trimming drops 4 public IPs (~$14.6/mo saved); cross-zone load balancing
+is on, so the app stays reachable throughout with no downtime.
+
+> **Caveat — this is a manual change *outside* Express Mode.** A future `push_and_deploy.sh`
+> / `update-express-gateway-service` redeploy can re-expand the ALB back to all 6 AZs. After a
+> redeploy, check the public-IP count; if it has climbed back toward 7, re-run the trim:
+> ```bash
+> aws ec2 describe-network-interfaces --region us-east-1 \
+>   --query 'length(NetworkInterfaces[?Association.PublicIp!=`null`])' --output text   # expect 3
+> ```
+
+Subnet IDs are **deploy-specific** — list the current ones with
+`aws elbv2 describe-load-balancers --names ecs-express-gateway-alb-c7681f3d --query 'LoadBalancers[0].AvailabilityZones[].[ZoneName,SubnetId]' --output text`.
+
+```bash
+ALB_ARN=arn:aws:elasticloadbalancing:us-east-1:<ACCOUNT_ID>:loadbalancer/app/ecs-express-gateway-alb-c7681f3d/0e6bcf9b3167d3d8
+
+# Trim to 2 AZs (us-east-1c = task's AZ, us-east-1a):
+aws elbv2 set-subnets --region us-east-1 --load-balancer-arn "$ALB_ARN" \
+  --subnets subnet-0e92a98d65650ad9f subnet-0b27c0edca5ab5a47
+
+# Rollback — restore all 6 AZs:
+aws elbv2 set-subnets --region us-east-1 --load-balancer-arn "$ALB_ARN" \
+  --subnets subnet-065116ff23888e0e6 subnet-083377acb21962974 subnet-0b27c0edca5ab5a47 \
+            subnet-0cb8484f1ecae5290 subnet-0e92a98d65650ad9f subnet-0f2064fbc49af2461
+```
+
+---
+
 ## Notes / known limitations
 
 - **Ephemeral metrics.** `metrics.jsonl` lives at `/tmp` inside the task and is lost on task
