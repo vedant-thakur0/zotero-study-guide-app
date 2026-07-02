@@ -9,6 +9,12 @@
 > and `static/storage.js`) was added. The structure tree, run commands, schemas, and
 > API reference below reflect the current layout. For the quickstart, see the top-level
 > **[README](../README.md)**.
+>
+> **On "stateless."** Client mode stores no user content or API keys server-side (content →
+> browser IndexedDB; keys → sent per-request, never written or logged). The one exception, on
+> the *hosted* deployment only, is **anonymous per-call telemetry** persisted to S3 — latency,
+> provider/model, success, and a salted one-way key fingerprint (never the raw key/prompt/
+> response). See `src/zsg/metrics.py` and `deploy/README.md`.
 
 ## Overview
 

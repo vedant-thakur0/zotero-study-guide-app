@@ -59,10 +59,17 @@ local-disk pipeline used by the CLI walkthrough below.
 **Hosted deployment (live).** The app is containerized (gunicorn behind a Docker image — see
 the [`Dockerfile`](Dockerfile)) and deployed on **AWS ECS Express Mode**. In the hosted app
 each user pastes their own Purdue GenAI key in the Setup tab (sent per request, never stored
-server-side), and per-call metrics are persisted durably to S3. The full build-push-deploy
-steps live in the [deploy runbook](deploy/README.md). The image **must** be built for
-`linux/amd64` (ECS Fargate is x86_64). To run it locally instead, use Flask's dev server via
-`python -m zsg.app`.
+server-side). The full build-push-deploy steps live in the [deploy runbook](deploy/README.md).
+The image **must** be built for `linux/amd64` (ECS Fargate is x86_64). To run it locally
+instead, use Flask's dev server via `python -m zsg.app`.
+
+**What the server stores.** No server-side storage of your annotations or your API key — your
+content lives in your browser (IndexedDB), and the key is sent per request and never written to
+disk or logged. The server *does* record **anonymous per-call telemetry** to S3 for operational
+monitoring: timestamp, provider, model, success/failure, round-trip latency, and a **salted,
+one-way fingerprint** of the API key. The fingerprint lets us count distinct users and correlate
+calls from the same key, but it is irreversible — the key itself cannot be recovered from it
+(see the security invariant in [`src/zsg/metrics.py`](src/zsg/metrics.py)).
 
 **In-app onboarding.** The web app guides a first-time user end to end: it lands on the
 Pipeline tab, shows a 5-stage flow indicator, frames the human-in-the-loop review step ("AI

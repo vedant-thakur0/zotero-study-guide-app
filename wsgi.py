@@ -26,7 +26,11 @@ Initialization strategy (without app_config.json):
     reading, so a missing file causes a graceful empty response, not a crash.
 
     The primary hosted path is the stateless /api/v2/* set + client-mode.js, which
-    needs no server-side state at all.
+    needs no server-side state at all for user content or keys (both stay in the
+    browser / are sent per-request). The one thing the hosted server *does* persist
+    is anonymous per-call telemetry to S3 — latency, provider/model, success, and a
+    salted one-way key fingerprint (never the raw key, prompt, or response). See the
+    security invariant in zsg/metrics.py and the durable-storage note in deploy/README.md.
 """
 
 import os

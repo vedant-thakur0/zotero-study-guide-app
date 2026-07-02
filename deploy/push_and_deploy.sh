@@ -33,6 +33,14 @@ ECR_HOST="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 IMG="${ECR_HOST}/${REPO}:${TAG}"
 SVC_ARN="arn:aws:ecs:${REGION}:${ACCOUNT_ID}:service/default/${SERVICE}"
 
+# Task role + durable metrics target. These MUST match the live service config
+# (set at create time, see deploy/README.md §3): the task role grants the
+# container S3 write/read on the metrics bucket, and ZSG_METRICS_PATH points the
+# app at that bucket. Omitting either here silently reverts metrics to an
+# ephemeral in-container file that is lost on every redeploy.
+TASK_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/ecsExpressTaskRole-zsg"
+METRICS_URI="s3://zsg-metrics-${ACCOUNT_ID}/metrics"
+
 echo "Account:  $ACCOUNT_ID"
 echo "Region:   $REGION"
 echo "Image:    $IMG"
@@ -61,11 +69,15 @@ cat > /tmp/ecs-express-update.json <<JSON
 {
   "serviceArn": "${SVC_ARN}",
   "executionRoleArn": "arn:aws:iam::${ACCOUNT_ID}:role/ecsExpressExecutionRole",
+  "taskRoleArn": "${TASK_ROLE_ARN}",
   "healthCheckPath": "/",
   "primaryContainer": {
     "image": "${IMG}",
     "containerPort": 8080,
-    "environment": [ { "name": "ZSG_METRICS_PATH", "value": "/tmp/metrics.jsonl" } ]
+    "environment": [
+      { "name": "ZSG_METRICS_PATH", "value": "${METRICS_URI}" },
+      { "name": "AWS_REGION", "value": "${REGION}" }
+    ]
   },
   "cpu": "1024",
   "memory": "2048"

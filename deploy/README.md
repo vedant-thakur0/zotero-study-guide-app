@@ -18,7 +18,7 @@ Deploy the Zotero Study Guide app to **Amazon ECS Express Mode** from a containe
 and Docker (Colima) + the `docker-buildx` plugin installed locally.
 
 Placeholders (real values used in the live deploy shown for reference):
-- `<ACCOUNT_ID>` — 12-digit AWS account ID (`aws sts get-caller-identity --query Account --output text`) — live: `<ACCOUNT_ID>`
+- `<ACCOUNT_ID>` — 12-digit AWS account ID (`aws sts get-caller-identity --query Account --output text`)
 - `<REGION>` — AWS region — live: `us-east-1`
 - `<REPO>` — ECR repository name — live: `zotero-study-guide`
 - `<TAG>` — image tag — live: `latest`
@@ -30,7 +30,7 @@ ECR image URI: `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/<REPO>:<TAG>`
 
 ## 1. One-time account setup
 
-### 1.1 IAM roles ECS Express needs (two)
+### 1.1 IAM roles ECS Express needs (three)
 
 ```bash
 # Execution role — lets ECS pull from ECR and write logs
@@ -50,6 +50,17 @@ aws iam create-role --role-name ecsExpressInfrastructureRole \
   --assume-role-policy-document file:///tmp/ecs-infra-trust.json
 aws iam attach-role-policy --role-name ecsExpressInfrastructureRole \
   --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSInfrastructureRoleforExpressGatewayServices
+
+# Task role — the identity the *running container* assumes. This is what grants
+# the app S3 write/read on the metrics bucket (ZsgMetricsS3WriteRead). Without
+# it the container has no AWS credentials and durable metrics silently no-op.
+cat > /tmp/ecs-tasks-trust.json <<'JSON'
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}
+JSON
+aws iam create-role --role-name ecsExpressTaskRole-zsg \
+  --assume-role-policy-document file:///tmp/ecs-tasks-trust.json
+aws iam attach-role-policy --role-name ecsExpressTaskRole-zsg \
+  --policy-arn arn:aws:iam::<ACCOUNT_ID>:policy/ZsgMetricsS3WriteRead
 ```
 
 ### 1.2 ECS service-linked role (one-time, account-level)
@@ -101,12 +112,16 @@ cat > /tmp/ecs-express.json <<JSON
 {
   "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsExpressExecutionRole",
   "infrastructureRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsExpressInfrastructureRole",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsExpressTaskRole-zsg",
   "serviceName": "<SERVICE>",
   "healthCheckPath": "/",
   "primaryContainer": {
     "image": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/<REPO>:<TAG>",
     "containerPort": 8080,
-    "environment": [ { "name": "ZSG_METRICS_PATH", "value": "/tmp/metrics.jsonl" } ]
+    "environment": [
+      { "name": "ZSG_METRICS_PATH", "value": "s3://zsg-metrics-<ACCOUNT_ID>/metrics" },
+      { "name": "AWS_REGION", "value": "<REGION>" }
+    ]
   },
   "cpu": "1024",
   "memory": "2048"
@@ -124,6 +139,14 @@ ECS provisions an ALB and starts the task; the public URL appears under `status.
 > it is sent per-request in the `/api/v2/llm` body and never stored server-side. If you ever
 > want a single shared key instead, add it to Secrets Manager and reference it via the
 > container's `secrets` array + a read policy on the execution role.
+>
+> **What *is* stored: anonymous telemetry.** "Never stored server-side" applies to user content
+> and keys. The server does persist **per-call metrics** durably to S3 (`s3://zsg-metrics-…/metrics`,
+> via the task role): timestamp, provider, model, success, round-trip latency, and a **salted,
+> one-way fingerprint** of the key (`sha256(salt + key)[:16]`). The fingerprint counts distinct
+> users and correlates a key's calls but is irreversible — neither the raw key nor any prompt/
+> response is ever written. Read the log with [`scripts/metrics.sh`](../scripts/metrics.sh); the
+> security invariant lives in [`src/zsg/metrics.py`](../src/zsg/metrics.py).
 
 ---
 
@@ -145,9 +168,11 @@ curl -s -X POST "$URL/api/v2/parse" -H 'Content-Type: application/json' \
 Both should return `200`. A fresh deploy shows `503` for a couple of minutes while the task
 starts and the ALB health check stabilizes — that is expected, not a failure.
 
-**Live deploy (2026-06-17):** `https://<REDACTED>.ecs.us-east-1.on.aws`
-— `GET /` 200, `/api/v2/parse` 200, browser generation verified (24 successful LLM calls), and
-the metrics log recorded each call.
+**Live deploy (2026-06-17):** verified at `https://<the-endpoint>` (see `status.endpoint`
+above) — `GET /` 200, `/api/v2/parse` 200, browser generation verified (24 successful LLM
+calls), and the metrics log recorded each call. (The actual hostname is intentionally not
+published here — see the security note in "Notes / known limitations" below: no auth is
+wired in, so treat the live URL as a bearer credential until WAF/allowlisting lands.)
 
 ---
 
@@ -226,7 +251,8 @@ aws elbv2 set-subnets --region us-east-1 --load-balancer-arn "$ALB_ARN" \
 - **Ephemeral metrics.** `metrics.jsonl` lives at `/tmp` inside the task and is lost on task
   restart/scale events. For durable metrics, mount storage or ship records elsewhere — a
   follow-up, deliberately out of scope for v1.
-- **Public access.** The service URL is public. The app has no login; restrict with AWS WAF /
-  an allowlist if needed.
+- **Public access.** The service URL is public and **unauthenticated** — anyone who has the
+  hostname can use it. Restrict with AWS WAF / an allowlist before treating the URL as safe
+  to publish anywhere (docs, READMEs, portfolio links).
 - **ECS Exec is off**, so you can't `exec` in to read `/tmp/metrics.jsonl` on the live task;
   run the same image locally to inspect metrics behavior.

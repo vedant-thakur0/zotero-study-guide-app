@@ -25,7 +25,11 @@
 set -euo pipefail
 
 # --- config (the live deploy) ----------------------------------------------
-BUCKET="zsg-metrics-<ACCOUNT_ID>"
+# Set ZSG_AWS_ACCOUNT_ID in your shell/profile before running this script
+# (aws sts get-caller-identity --query Account --output text). Not hardcoded
+# here so this file is safe to publish/commit.
+: "${ZSG_AWS_ACCOUNT_ID:?Set ZSG_AWS_ACCOUNT_ID to your AWS account id first}"
+BUCKET="zsg-metrics-${ZSG_AWS_ACCOUNT_ID}"
 PREFIX="metrics"
 REGION="us-east-1"
 
