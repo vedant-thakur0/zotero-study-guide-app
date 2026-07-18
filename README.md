@@ -4,7 +4,7 @@ Turn Zotero PDF annotations into a self-contained, interactive HTML study guide 
 
 The content-generation step is powered by **[Purdue GenAI Studio](https://genai.rcac.purdue.edu)** by default (other LLM providers are supported behind a single seam).
 
-The app runs two ways: a **hosted web app** (live on AWS ECS Express Mode — open the URL, paste your Purdue GenAI key in Setup, and go), or the **local CLI/dev-server** walkthrough below. Both share the same pipeline and the same human-in-the-loop review step.
+The app runs locally via the **CLI/dev-server** walkthrough below. A **native macOS (Swift) port** lives in a sibling repo (`zotero-study-guide-swift`) and is the go-forward desktop distribution; this Python repo remains the reference pipeline (parity oracle) and the containerizable artifact for a future on-prem (Geddes) deployment. *(A hosted AWS deployment was live June–July 2026 and has been decommissioned — see `deploy/README.md`, kept as a historical runbook.)*
 
 ---
 
@@ -56,12 +56,13 @@ data, writing nothing to disk (`parse` → `sections` → `llm` → `build`). It
 tested (Playwright). A fresh web session defaults to client mode; `?mode=server` opts into the
 local-disk pipeline used by the CLI walkthrough below.
 
-**Hosted deployment (live).** The app is containerized (gunicorn behind a Docker image — see
-the [`Dockerfile`](Dockerfile)) and deployed on **AWS ECS Express Mode**. In the hosted app
-each user pastes their own Purdue GenAI key in the Setup tab (sent per request, never stored
-server-side). The full build-push-deploy steps live in the [deploy runbook](deploy/README.md).
-The image **must** be built for `linux/amd64` (ECS Fargate is x86_64). To run it locally
-instead, use Flask's dev server via `python -m zsg.app`.
+**Hosted deployment (decommissioned 2026-07-17).** The app was containerized (gunicorn — see
+the [`Dockerfile`](Dockerfile)) and ran on **AWS ECS Express Mode** from 2026-06-17 until the
+AWS footprint was sunset in favor of the native Swift desktop app. The
+[deploy runbook](deploy/README.md) is retained as a **historical reference** and as the
+rehearsal template for a future Geddes (on-prem) deployment; the Dockerfile remains the
+portable artifact that migration would consume. To run the app, use Flask's dev server via
+`python -m zsg.app`.
 
 **What the server stores.** No server-side storage of your annotations or your API key — your
 content lives in your browser (IndexedDB), and the key is sent per request and never written to
