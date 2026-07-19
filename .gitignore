@@ -66,3 +66,14 @@ metrics_dashboard.html
 # --- OS junk ---
 .DS_Store
 Thumbs.db
+
+# --- Local planning/tool state + per-machine app data (never source) ---
+.codemax/
+/projects/
+
+# --- Secret-sweep working files: contain the pre-scrub values; keep local only ---
+SWEEP-HANDOFF.md
+deploy/.sweep-replacements.txt
+
+# --- Scratch ---
+/testfile_delete_me.txt

@@ -1,8 +1,14 @@
-# AWS ECS Express Mode Deployment Runbook
+# AWS ECS Express Mode Deployment Runbook — HISTORICAL
+
+> **DECOMMISSIONED 2026-07-17.** The hosted AWS deployment this runbook describes has been
+> fully torn down (service/ALB, ECR repos, S3 metrics bucket, and the three IAM roles are
+> deleted; the `hitl-studyguide.dev` registration was never completed). The go-forward
+> distribution is the **native Swift desktop app** (`../../zotero-study-guide-swift`). This
+> runbook is retained because it was run end-to-end successfully (2026-06-17) and serves as
+> the rehearsal template for a future **Geddes (on-prem)** container deployment.
 
 Deploy the Zotero Study Guide app to **Amazon ECS Express Mode** from a container image in
-**Amazon ECR**. **This is the actual, verified deploy path** — it was run end-to-end on
-2026-06-17 and the app is live.
+**Amazon ECR**. This was the actual, verified deploy path — run end-to-end on 2026-06-17.
 
 > **History / why ECS Express, not App Runner.** We first targeted **AWS App Runner**, but
 > App Runner stopped accepting new customers on 2026-04-30 (AWS now recommends **ECS Express
